@@ -1,5 +1,5 @@
 
-<img src="./examples/pysktb_numba.png" height="200" >
+<img src="./logo.png" height="200" >
 # pysktb
 Scientific Python package for solving Slater Koster tight-binding hamiltonian
                             
