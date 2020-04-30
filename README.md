@@ -12,7 +12,7 @@ A python package in development for creating and solving slater koster tight-bin
   - Spin orbit coupling *(only for p orbitals as of now)*
   - Plot orbital weighted colorplots
   - Integration with [pymatgen](https://pymatgen.org) structres 
-
+  - JIT optimized with numba
 
 
 ### Installation
@@ -27,6 +27,8 @@ Example usage shown in 	[examples.ipynb](./examples/examples.ipynb)
   <img src="./examples/sp-chain.png" style="max-height: 70px; max-width: 70px;" >
   - with orbital projection on s
   <img src="./examples/sp-chain-proj.png" style="max-height: 70px; max-width: 70px;" >
+  - DOS
+  <img src="./examples/sp-chain-dos.png" style="max-height: 70px; max-width: 70px;" >
 2. Graphene and band colorplot in BZ
   <img src="./examples/graphene.png" style="max-height: 70px; max-width: 70px;" >
 3. Buckled antimony Sb 
@@ -34,12 +36,16 @@ Example usage shown in 	[examples.ipynb](./examples/examples.ipynb)
    <img src="./examples/Sb-flat.png" style="max-height: 70px; max-width: 70px;" >
    - preprint of Higher Order Topological states in 2D Sb https://arxiv.org/abs/2003.12656
    <img src="./examples/Sb_buckled.png" style="max-height: 70px; max-width: 70px;" >
-  
+ 4. Low buckled Sb Surface states with SOC - Topological Crystalline Insulator
+ <img src="./examples/buckled_sb_SOC.png" style="max-height: 70px; max-width: 70px;" >
+
+
 ### Features to be added
+   - Parallelization on kpoints and orbitals.
    - Spin Orbit Coupling for d,f
    - Bogoliubov-de-Gennes (BdG) solutions for the given system for Superconductivity 
    - Interface with [ASE](https://wiki.fysik.dtu.dk/ase/) structures
-   - Create finite structures and slabs for Topological calculations within the code *(requires pymatgen rightnow)*
+   - Create finite structures and slabs for Topological calculations within the code *(requires pymatgen right now)*
    - Berry phase calculation (high on priority)
    - Greens function DOS
    - Convert all operations to sympy, so that one can ouput analytical Tightbinding matrix elements for ease of access 
