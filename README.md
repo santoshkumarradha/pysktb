@@ -28,7 +28,7 @@ Example usage shown in 	[examples.ipynb](./examples/examples.ipynb)
   - with orbital projection on s
   <img src="./examples/sp-chain-proj.png" style="max-height: 70px; max-width: 70px;" >
   - DOS
-  <img src="./examples/sp-chain-dos.png" height="42" >
+  <img src="./examples/sp-chain-dos.png" height="200" >
 2. Graphene and band colorplot in BZ
   <img src="./examples/graphene.png" style="max-height: 70px; max-width: 70px;" >
 3. Buckled antimony Sb 
@@ -41,7 +41,7 @@ Example usage shown in 	[examples.ipynb](./examples/examples.ipynb)
 
 
 ### Optimized with `jit`
-<img src="./examples/pysktb_numba.png" height="42" >
+<img src="./examples/pysktb_numba.png" height="200" >
 
 
 ### Features to be added
