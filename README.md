@@ -28,7 +28,7 @@ Example usage shown in 	[examples.ipynb](./examples/examples.ipynb)
   - with orbital projection on s
   <img src="./examples/sp-chain-proj.png" style="max-height: 70px; max-width: 70px;" >
   - DOS
-  <img src="./examples/sp-chain-dos.png" style="max-height: 70px; max-width: 70px;" >
+  <img src="./examples/sp-chain-dos.png" style="max-height: 40px; max-width: 40px;" >
 2. Graphene and band colorplot in BZ
   <img src="./examples/graphene.png" style="max-height: 70px; max-width: 70px;" >
 3. Buckled antimony Sb 
@@ -38,6 +38,10 @@ Example usage shown in 	[examples.ipynb](./examples/examples.ipynb)
    <img src="./examples/Sb_buckled.png" style="max-height: 70px; max-width: 70px;" >
  4. Low buckled Sb Surface states with SOC - Topological Crystalline Insulator
  <img src="./examples/buckled_sb_SOC.png" style="max-height: 70px; max-width: 70px;" >
+
+
+### Optimized with `jit`
+<img src="./examples/pysktb_numba.png" style="max-height: 40px; max-width: 40px;" >
 
 
 ### Features to be added
