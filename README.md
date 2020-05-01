@@ -14,7 +14,7 @@ A python package in development for creating and solving slater koster tight-bin
   - Plot orbital weighted colorplots
   - Integration with [pymatgen](https://pymatgen.org) structres 
   - JIT optimized with numba
-
+  - Parallelization on kpoints
 
 ### Installation
  1. Copy the files _params.py and pysktb.py to the working directory
@@ -41,17 +41,19 @@ Example usage shown in 	[examples.ipynb](./examples/examples.ipynb)
  <img src="./examples/buckled_sb_SOC.png" style="max-height: 70px; max-width: 70px;" >
 
 
-### Optimized with `jit`
+### Optimized 
+  - with `jit`
 <img src="./examples/pysktb_numba.png" height="200" >
-
+- Parallelized over k
+<img src="./examples/pysktb_parallel.png" height="200" >
 
 ### Features to be added
-   - Parallelization on kpoints and orbitals.
+   - ~Parallelization on kpoints~ and orbitals.
    - Spin Orbit Coupling for d,f
    - Bogoliubov-de-Gennes (BdG) solutions for the given system for Superconductivity 
    - Interface with [ASE](https://wiki.fysik.dtu.dk/ase/) structures
    - Create finite structures and slabs for Topological calculations within the code *(requires pymatgen right now)*
    - Berry phase calculation (high on priority)
    - Greens function DOS
-   - Convert all operations to sympy, so that one can ouput analytical Tightbinding matrix elements for ease of access 
+   - Convert all operations to sympy, so that one can output analytical Tightbinding matrix elements for ease of access 
 
