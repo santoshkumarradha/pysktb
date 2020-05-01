@@ -18,7 +18,11 @@ A python package in development for creating and solving slater koster tight-bin
 
 ### Installation
  1. Copy the files _params.py and pysktb.py to the working directory
- 2. Import them and use !
+ 2. Install the modules in requirements.txt 
+ ```console
+ pip install -U -r requirements.txt
+ ```
+ 3. Import them and use !
 
  
 ### Examples
