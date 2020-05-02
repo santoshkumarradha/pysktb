@@ -36,6 +36,7 @@ numba = 1
 
 
 class Structure(object):
+
     def __init__(self,
                  lattice,
                  atoms,
@@ -95,6 +96,7 @@ class Structure(object):
         return final
 
     def get_bond_mat(self):
+
         def get_cutoff(atom_1, atom_2):
             ele_1 = atom_1.element
             ele_2 = atom_2.element
@@ -142,6 +144,7 @@ class Structure(object):
         return dist_mat
 
     def get_dist_matrix_vec(self):
+
         def get_dist_vec(pos1, pos2, lat_vecs, l_min=False):
             """ # p1, p2 direct 
 				# return angstrom
@@ -178,8 +181,7 @@ class Structure(object):
     def get_elements(self):
         """return list of elements eg) ['Si', 'O']"""
         from collections import OrderedDict
-        return list(OrderedDict.fromkeys([atom.element
-                                          for atom in self.atoms]))
+        return list(OrderedDict.fromkeys([atom.element for atom in self.atoms]))
 
     @staticmethod
     def read_poscar(file_name='./POSCAR', kwargs={}):
@@ -216,6 +218,7 @@ class Structure(object):
 class Lattice:
     """represent lattice of structure
 	"""
+
     def __init__(self, *args):
         """
 		Args:
@@ -321,6 +324,7 @@ class Atom:
 class System(object):
     """ atomics structures and tight_binding parameters 
 	"""
+
     def __init__(self, structure, orbitals, parameters, scale_params=None):
         self.structure = structure
         self.orbitals = orbitals
@@ -356,8 +360,7 @@ class System(object):
             spl_pnts.append(kpts_len[np.all(np.array(k_all_path).reshape(
                 -1, 3) == i,
                                             axis=1)])
-        return k_all_path, kpts_len, np.unique(
-            np.concatenate(spl_pnts).ravel())
+        return k_all_path, kpts_len, np.unique(np.concatenate(spl_pnts).ravel())
 
     def get_kpt_path(self, sp_kpts, kpt_den=30):
         """ return list of kpoints connecting sp_kpts
@@ -452,7 +455,8 @@ class System(object):
             if scale_params is None:
                 continue
             hop_orbit = set([
-                hop.replace('V_', '') for hop in self.params[pair]
+                hop.replace('V_', '')
+                for hop in self.params[pair]
                 if 'V_' in hop
             ])
             exp_orbit = set(
@@ -464,6 +468,7 @@ class System(object):
     def get_hop_params(self, atom_1_i, atom_2_i, image_i):
         """ return parameters dictionary
 		"""
+
         def get_pair(key_list, ele_1, ele_2):
             # key_list = self.system.get_param_key()
             if '{}{}'.format(ele_1, ele_2) in key_list:
@@ -510,6 +515,7 @@ class System(object):
     def get_onsite_term(self, atom_i):
         """ calc onsite term
 		"""
+
         def get_onsite_s(e_s, vol_ratio, alpha):
             return (e_s + alpha * vol_ratio) * np.eye(1)
 
@@ -721,8 +727,8 @@ class System(object):
                                               pS_onsite],
                                         np.c_[sd_onsite.T, pd_onsite.T,
                                               d_onsite, Sd_onsite.T],
-                                        np.c_[sS_onsite.T, Sp_onsite,
-                                              Sd_onsite, S_onsite]])
+                                        np.c_[sS_onsite.T, Sp_onsite, Sd_onsite,
+                                              S_onsite]])
             return onsite_term
 
     def _get_soc_mat_i(self, atom_i):
@@ -745,7 +751,7 @@ class System(object):
             h_soc_p = np.array([[0, 0, -1j, 0, 0, 1], [0, 0, 0, 1j, 0, 0],
                                 [0, 0, 0, 0, 0, -1j], [0, 0, 0, 0, -1j, 0],
                                 [0, -1, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]
-                                ]) * lambda_p
+                               ]) * lambda_p
             h_soc_p += h_soc_p.conj().T
             # orbit_i * 2 for spin
             rows = []
@@ -806,9 +812,9 @@ class Hamiltonian(object):
 
         self.system = System(self.structure, t, self.inter)
         self.n_orbitals = len(self.system.all_orbitals)
-        self.H_wo_g = np.zeros((self.system.structure.max_image,
-                                self.n_orbitals, self.n_orbitals),
-                               dtype=complex)
+        self.H_wo_g = np.zeros(
+            (self.system.structure.max_image, self.n_orbitals, self.n_orbitals),
+            dtype=complex)
         self.calc_ham_wo_k()
         self.soc_mat = self.system.get_soc_mat()
         self.dist_mat_vec = self.system.structure.dist_mat_vec
@@ -850,11 +856,7 @@ class Hamiltonian(object):
             (eval, eig) = self.clean_eig(eval, eig)
             return eval, eig
 
-    def solve_kpath(self,
-                    k_list=None,
-                    eig_vectors=False,
-                    soc=True,
-                    parallel=1):
+    def solve_kpath(self, k_list=None, eig_vectors=False, soc=True, parallel=1):
         """ solve along a give k path 
 			k_list: list of k points (can be generated by get_kpts)
 			returns:
@@ -881,8 +883,8 @@ class Hamiltonian(object):
                     print(2)
                     ret_eval = np.zeros((self.n_orbitals, nkp),
                                         dtype=np.float64)
-                    ret_evec = np.zeros(
-                        (self.n_orbitals, nkp, self.n_orbitals), dtype=complex)
+                    ret_evec = np.zeros((self.n_orbitals, nkp, self.n_orbitals),
+                                        dtype=complex)
                 for i, k in enumerate(k_list):
                     ham = self.get_ham(k, l_soc=soc)
                     ham_list.append(ham)
@@ -926,16 +928,15 @@ class Hamiltonian(object):
 
                 nkp = len(k_list)
                 if soc == True:
-                    ret_eval = np.zeros((self.n_orbitals * 2, nkp),
-                                        dtype=float)
+                    ret_eval = np.zeros((self.n_orbitals * 2, nkp), dtype=float)
                     ret_evec = np.zeros(
                         (self.n_orbitals * 2, nkp, self.n_orbitals * 2),
                         dtype=complex)
                 else:
                     print(2)
                     ret_eval = np.zeros((self.n_orbitals, nkp), dtype=float)
-                    ret_evec = np.zeros(
-                        (self.n_orbitals, nkp, self.n_orbitals), dtype=complex)
+                    ret_evec = np.zeros((self.n_orbitals, nkp, self.n_orbitals),
+                                        dtype=complex)
                 for i, k in enumerate(k_list):
                     ham = self.get_ham(k, l_soc=soc)
                     if eig_vectors == False:
@@ -1021,9 +1022,9 @@ class Hamiltonian(object):
 		"""
         rec_lat = self.system.structure.lattice.get_rec_lattice()
         kpt_cart = np.dot(kpt, rec_lat)
-        g_mat = np.zeros((self.system.structure.max_image, self.n_orbitals,
-                          self.n_orbitals),
-                         dtype=complex)
+        g_mat = np.zeros(
+            (self.system.structure.max_image, self.n_orbitals, self.n_orbitals),
+            dtype=complex)
 
         # dist_mat_vec = self.system.structure.dist_mat_vec
         # bond_mat = self.system.structure.bond_mat
@@ -1117,7 +1118,7 @@ class Hamiltonian(object):
 
             # Special case if a single number:
             if not hasattr(z, "__iter__"
-                           ):  # to check for numerical input -- this is a hack
+                          ):  # to check for numerical input -- this is a hack
                 z = np.array([z])
 
             z = np.asarray(z)
@@ -1152,6 +1153,7 @@ class Hamiltonian(object):
         """ calc hamiltonian with out k
 			all g factor is set to 1
 		"""
+
         def get_dir_cos(dist_vec):
             """ return directional cos of distance vector """
             if np.linalg.norm(dist_vec) == 0:
@@ -1196,10 +1198,10 @@ class Hamiltonian(object):
                         for orbit_2_i, orbit_2 in enumerate(atom_2.orbitals):
                             hop_int_ = hop_int_pair[Hamiltonian.get_orb_ind(
                                 orbit_1)][Hamiltonian.get_orb_ind(orbit_2)]
-                            ind_1 = get_ind(atom_1_i, orbit_1_i,
-                                            atom_1.element, orbit_1)
-                            ind_2 = get_ind(atom_2_i, orbit_2_i,
-                                            atom_2.element, orbit_2)
+                            ind_1 = get_ind(atom_1_i, orbit_1_i, atom_1.element,
+                                            orbit_1)
+                            ind_2 = get_ind(atom_2_i, orbit_2_i, atom_2.element,
+                                            orbit_2)
                             self.H_wo_g[image_ind, ind_1, ind_2] = hop_int_
 
         # real hermitian -> symmetric

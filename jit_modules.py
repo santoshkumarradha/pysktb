@@ -9,10 +9,9 @@ warnings.filterwarnings('ignore')
 
 
 @nb.jit(nopython=False)
-def get_gmat_jit(g_mat, all_iter, max_image, n_orbitals, bond_mat,
-                 dist_mat_vec, kpt_cart):
-    for ind_1, (atom_1_i, orbit_1_i, element_1,
-                orbit_1) in enumerate(all_iter):
+def get_gmat_jit(g_mat, all_iter, max_image, n_orbitals, bond_mat, dist_mat_vec,
+                 kpt_cart):
+    for ind_1, (atom_1_i, orbit_1_i, element_1, orbit_1) in enumerate(all_iter):
         for ind_2, (atom_2_i, orbit_2_i, element_2,
                     orbit_2) in enumerate(all_iter):
             for image_ind in range(max_image):

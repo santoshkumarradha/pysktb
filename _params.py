@@ -96,12 +96,12 @@ def get_hop_int(V_sss=0,
     hop_int[7][3] = -hop_int[3][7]
     hop_int[8][3] = -hop_int[3][8]
 
-    hop_int[4][4] = l**2 * m**2 * (3 * V_dds - 4 * V_ddp + V_ddd) + (
-        l**2 + m**2) * V_ddp + n**2 * V_ddd
-    hop_int[5][5] = m**2 * n**2 * (3 * V_dds - 4 * V_ddp + V_ddd) + (
-        m**2 + n**2) * V_ddp + l**2 * V_ddd
-    hop_int[6][6] = n**2 * l**2 * (3 * V_dds - 4 * V_ddp + V_ddd) + (
-        n**2 + l**2) * V_ddp + m**2 * V_ddd
+    hop_int[4][4] = l**2 * m**2 * (3 * V_dds - 4 * V_ddp +
+                                   V_ddd) + (l**2 + m**2) * V_ddp + n**2 * V_ddd
+    hop_int[5][5] = m**2 * n**2 * (3 * V_dds - 4 * V_ddp +
+                                   V_ddd) + (m**2 + n**2) * V_ddp + l**2 * V_ddd
+    hop_int[6][6] = n**2 * l**2 * (3 * V_dds - 4 * V_ddp +
+                                   V_ddd) + (n**2 + l**2) * V_ddp + m**2 * V_ddd
 
     hop_int[4][5] = l * m**2 * n * (3 * V_dds - 4 * V_ddp +
                                     V_ddd) + l * n * (V_ddp - V_ddd)
@@ -144,8 +144,7 @@ def get_hop_int(V_sss=0,
     hop_int[7][7] = 0.25 * (l**2 - m**2)**2 * (
         3 * V_dds - 4 * V_ddp + V_ddd) + (l**2 + m**2) * V_ddp + n**2 * V_ddd
     hop_int[8][8] = 0.75 * (l**2 + m**2)**2 * V_ddd + 3 * (
-        l**2 + m**2) * n**2 * V_ddp + 0.25 * (l**2 + m**2 -
-                                              2 * n**2)**2 * V_dds
+        l**2 + m**2) * n**2 * V_ddp + 0.25 * (l**2 + m**2 - 2 * n**2)**2 * V_dds
     hop_int[7][8] = sqrt(3) * 0.25 * (l**2 - m**2) * (
         n**2 * (2 * V_dds - 4 * V_ddp + V_ddd) + V_ddd - (l**2 + m**2) * V_dds)
     hop_int[8][7] = sqrt(3) * 0.25 * (l**2 - m**2) * (
