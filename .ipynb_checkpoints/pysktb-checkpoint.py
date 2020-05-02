@@ -1,41 +1,49 @@
-#    ____            ____    _  __  _____   ____  
-#   |  _ \   _   _  / ___|  | |/ / |_   _| | __ ) 
-#   | |_) | | | | | \___ \  | ' /    | |   |  _ \ 
+#    ____            ____    _  __  _____   ____
+#   |  _ \   _   _  / ___|  | |/ / |_   _| | __ )
+#   | |_) | | | | | \___ \  | ' /    | |   |  _ \
 #   |  __/  | |_| |  ___) | | . \    | |   | |_) |
-#   |_|      \__, | |____/  |_|\_\   |_|   |____/ 
-#            |___/                                
+#   |_|      \__, | |____/  |_|\_\   |_|   |____/
+#            |___/
 #
 #
-# by Santosh Kumar Radha, 
+# by Santosh Kumar Radha,
 # srr70@case.edu
-# Inspired by various codes 
-# 
+# Inspired by various codes
+#
 #
 #
 #=============================================
-__version__='0.5'
+__version__ = '0.5'
 import numpy as np
 import itertools
 from itertools import permutations
 from numpy import sqrt
+
+
 class Structure(object):
-    def __init__(self, lattice, atoms, periodicity=None, name=None, bond_cut=None):
+    def __init__(self,
+                 lattice,
+                 atoms,
+                 periodicity=None,
+                 name=None,
+                 bond_cut=None):
         assert isinstance(lattice, Lattice), 'not Lattice object'
         assert isinstance(atoms, list), 'atoms is not list'
         assert isinstance(atoms[0], Atom), 'atom is not Atom object'
-        
+
         self.name = name or 'system'
         self.lattice = lattice
         self.atoms = atoms
         self.bond_cut = bond_cut
         self.periodicity = periodicity or [True, True, True]
-        self.max_image = 3 ** np.sum(self.periodicity)
+        self.max_image = 3**np.sum(self.periodicity)
 
         self.bond_mat = self.get_bond_mat()
         self.dist_mat_vec = self.get_dist_matrix_vec()
         self.dist_mat = self.get_dist_matrix()
         self.dir_cos = self.get_dir_cos_all()
-    def get_supercell(self,sc,vac=[0,0,0]):
+
+    def get_supercell(self, sc, vac=[0, 0, 0]):
         '''
          Input-
          sc:super cell lattice 3x3 
@@ -44,18 +52,32 @@ class Structure(object):
          
          usefull for making use of pymatgen's codes for making finite complex slabs and defects
         '''
-        try:import pymatgen as p
-        except: print("Needs pymatgen please install using pip install pymatgen")
-        new_s=p.Structure(lattice=self.get_lattice(),species=[i.element for i in self.atoms],
-        coords=[list(i.pos) for i in self.atoms])
+        try:
+            import pymatgen as p
+        except:
+            print("Needs pymatgen please install using pip install pymatgen")
+        new_s = p.Structure(lattice=self.get_lattice(),
+                            species=[i.element for i in self.atoms],
+                            coords=[list(i.pos) for i in self.atoms])
         new_s.make_supercell(sc)
-        def get_vaccume(s,vac):
-            abc=np.add([new_s.lattice.a,new_s.lattice.b,new_s.lattice.c],vac)
-            ang=new_s.lattice.angles
-            l=p.core.lattice.Lattice.from_parameters(a=abc[0],b=abc[1],c=abc[2],alpha=ang[0],beta=ang[1],gamma=ang[2])
-            return p.Structure(lattice=l,species=new_s.species,coords=new_s.frac_coords)
-        final=get_vaccume(new_s,vac)
+
+        def get_vaccume(s, vac):
+            abc = np.add([new_s.lattice.a, new_s.lattice.b, new_s.lattice.c],
+                         vac)
+            ang = new_s.lattice.angles
+            l = p.core.lattice.Lattice.from_parameters(a=abc[0],
+                                                       b=abc[1],
+                                                       c=abc[2],
+                                                       alpha=ang[0],
+                                                       beta=ang[1],
+                                                       gamma=ang[2])
+            return p.Structure(lattice=l,
+                               species=new_s.species,
+                               coords=new_s.frac_coords)
+
+        final = get_vaccume(new_s, vac)
         return final
+
     def get_bond_mat(self):
         def get_cutoff(atom_1, atom_2):
             ele_1 = atom_1.element
@@ -91,8 +113,13 @@ class Structure(object):
         bond_mat_2 = dist_mat > 0
 
         return bond_mat * bond_mat_2
-    def get_lattice(self):return self.lattice.get_matrix()
-    def get_pos(self): return np.concatenate([i.pos for i in self.atoms]).ravel()
+
+    def get_lattice(self):
+        return self.lattice.get_matrix()
+
+    def get_pos(self):
+        return np.concatenate([i.pos for i in self.atoms]).ravel()
+
     def get_dist_matrix(self):
         dist_mat_vec = self.get_dist_matrix_vec()
         dist_mat = np.linalg.norm(dist_mat_vec, axis=-1)
@@ -105,7 +132,7 @@ class Structure(object):
                 # latConst is included in lat_vecs
             """
             diff = np.array(pos1) - np.array(pos2)
-            if np.linalg.norm(diff) ==  0:
+            if np.linalg.norm(diff) == 0:
                 return 0
             if l_min:
                 diff = diff - np.round(diff)
@@ -136,11 +163,13 @@ class Structure(object):
     def get_elements(self):
         """return list of elements eg) ['Si', 'O']"""
         from collections import OrderedDict
-        return list(OrderedDict.fromkeys([atom.element for atom in self.atoms]))
+        return list(OrderedDict.fromkeys([atom.element
+                                          for atom in self.atoms]))
 
     @staticmethod
     def read_poscar(file_name='./POSCAR', kwargs={}):
-        lat_const, lattice_mat, atom_set_direct, dynamics = readPOSCAR(fileName=file_name)
+        lat_const, lattice_mat, atom_set_direct, dynamics = readPOSCAR(
+            fileName=file_name)
 
         atoms = []
         for a in atom_set_direct:
@@ -164,9 +193,10 @@ class Structure(object):
         dist_vec = self.dist_mat_vec
         dist_norm = np.linalg.norm(dist_vec, axis=-1)
         indx_zero = np.where(dist_norm == 0)
-        dist_norm[indx_zero]=1E-10
-        dir_cos = dist_vec / dist_norm[:,:,:, np.newaxis]
+        dist_norm[indx_zero] = 1E-10
+        dir_cos = dist_vec / dist_norm[:, :, :, np.newaxis]
         return dir_cos
+
 
 class Lattice:
     """represent lattice of structure
@@ -186,12 +216,12 @@ class Lattice:
         """
         from numpy.linalg import norm
 
-        a = matrix[0] #* lat_const
-        b = matrix[1] #* lat_const
-        c = matrix[2] #* lat_const
+        a = matrix[0]  #* lat_const
+        b = matrix[1]  #* lat_const
+        c = matrix[2]  #* lat_const
 
         alpha = np.arctan2(norm(np.cross(b, c)), np.dot(b, c))
-        beta  = np.arctan2(norm(np.cross(c, a)), np.dot(c, a))
+        beta = np.arctan2(norm(np.cross(c, a)), np.dot(c, a))
         gamma = np.arctan2(norm(np.cross(a, b)), np.dot(a, b))
 
         return norm(a), norm(b), norm(c), alpha, beta, gamma
@@ -206,18 +236,20 @@ class Lattice:
         # so far, alpha, beta, gamma < 90 degree
         a, b, c, alpha, beta, gamma = self.a, self.b, self.c, self.alpha, self.beta, self.gamma
 
-        v = a * b * c * np.sqrt(1. - np.cos(alpha) ** 2 - np.cos(beta) ** 2 - np.cos(gamma) ** 2 + 2 * np.cos(alpha) * np.cos(beta) * np.cos(gamma) )
+        v = a * b * c * np.sqrt(1. - np.cos(alpha)**2 - np.cos(beta)**2 -
+                                np.cos(gamma)**2 + 2 * np.cos(alpha) *
+                                np.cos(beta) * np.cos(gamma))
 
         T = np.zeros((3, 3))
         T = np.array([ \
                   [a, b * np.cos(gamma), c * np.cos(beta)                                                  ] ,\
                   [0, b * np.sin(gamma), c * (np.cos(alpha) - np.cos(beta) * np.cos(gamma)) / np.sin(gamma)] ,\
-                  [0, 0                , v / (a * b * np.sin(gamma))                                       ] 
+                  [0, 0                , v / (a * b * np.sin(gamma))                                       ]
                       ])
         matrix = np.zeros((3, 3))
-        matrix[:,0] = np.dot(T, np.array((1, 0, 0)))
-        matrix[:,1] = np.dot(T, np.array((0, 1, 0)))
-        matrix[:,2] = np.dot(T, np.array((0, 0, 1)))
+        matrix[:, 0] = np.dot(T, np.array((1, 0, 0)))
+        matrix[:, 1] = np.dot(T, np.array((0, 1, 0)))
+        matrix[:, 2] = np.dot(T, np.array((0, 0, 1)))
         # return matrix.T
         return self.matrix
 
@@ -230,16 +262,16 @@ class Lattice:
         return rec_lat_mat
 
     def __repr__(self):
-        _repr = [self.a, self.b, self.c, self.alpha, self.beta , self.gamma]
+        _repr = [self.a, self.b, self.c, self.alpha, self.beta, self.gamma]
         _repr = [str(i) for i in _repr]
         return ' '.join(_repr)
 
 
 class Atom:
-    ORBITALS_ALL = ['s',
-                    'px', 'py', 'pz',
-                    'dxy', 'dyz', 'dxz', 'dx2-y2', 'dz2',
-                    'S']
+    ORBITALS_ALL = [
+        's', 'px', 'py', 'pz', 'dxy', 'dyz', 'dxz', 'dx2-y2', 'dz2', 'S'
+    ]
+
     def __init__(self, element, pos):
         """ Object to represent atom
             Args:
@@ -266,9 +298,10 @@ class Atom:
     def set_orbitals(self, orbitals=None):
         assert set(orbitals).issubset(set(Atom.ORBITALS_ALL)), 'wrong orbitals'
         self.orbitals = orbitals
-    
+
     def __repr__(self):
         return '{} {}'.format(self.element, self.pos)
+
 
 class System(object):
     """ atomics structures and tight_binding parameters 
@@ -280,10 +313,15 @@ class System(object):
         self.all_orbitals = self.get_all_orbitals()
         self.all_iter = self.get_all_iter()
         self.params = parameters
-        sc=dict()
-        for i in [''.join(k) for k in  [j for j in itertools.product([i for i in list(self.orbitals.keys())], repeat=2)]]:
-            sc[i]=None
-        self.scale_params = sc#scale_params
+        sc = dict()
+        for i in [
+                ''.join(k) for k in [
+                    j for j in itertools.product(
+                        [i for i in list(self.orbitals.keys())], repeat=2)
+                ]
+        ]:
+            sc[i] = None
+        self.scale_params = sc  #scale_params
 
         assert set(self.get_param_key()).issubset(set(self.params.keys())), \
                 'wrong parameter set\n' + \
@@ -291,18 +329,22 @@ class System(object):
                 'required: {}'.format(self.get_param_key())
         assert self.chk_scale_param_key(), \
                'The hoping parameters and the exponent parameters are not consistent!'
-    
-    def get_kpts(self,sp_kpts,kpt_den):
-        sp_kpts=[sp_kpts]
+
+    def get_kpts(self, sp_kpts, kpt_den):
+        sp_kpts = [sp_kpts]
         kpt_path = self.get_kpt_path(sp_kpts, kpt_den)
-        kpts_len = self.get_kpt_len(kpt_path, self.structure.lattice.get_matrix())
-        k_all_path = [kpt for kpt_path_seg in kpt_path
-                          for kpt in kpt_path_seg]
-        spl_pnts=[]
+        kpts_len = self.get_kpt_len(kpt_path,
+                                    self.structure.lattice.get_matrix())
+        k_all_path = [kpt for kpt_path_seg in kpt_path for kpt in kpt_path_seg]
+        spl_pnts = []
         for i in sp_kpts[0]:
-             spl_pnts.append(kpts_len[np.all(np.array(k_all_path).reshape(-1,3)==i,axis=1)])
-        return k_all_path, kpts_len, np.unique(np.concatenate(spl_pnts).ravel())
-    def get_kpt_path(self,sp_kpts, kpt_den=30):
+            spl_pnts.append(kpts_len[np.all(np.array(k_all_path).reshape(
+                -1, 3) == i,
+                                            axis=1)])
+        return k_all_path, kpts_len, np.unique(
+            np.concatenate(spl_pnts).ravel())
+
+    def get_kpt_path(self, sp_kpts, kpt_den=30):
         """ return list of kpoints connecting sp_kpts
             args: 
                 sp_kpts: list of k-points paths containing special kpoints
@@ -325,7 +367,7 @@ class System(object):
             kpts.append(kpts_path)
         return kpts
 
-    def get_kpt_len(self,kpts_path, lat_mat):
+    def get_kpt_len(self, kpts_path, lat_mat):
         rec_lat_mat = np.linalg.inv(lat_mat).T
         kpts_path_cart = []
         for kpts in kpts_path:
@@ -343,8 +385,9 @@ class System(object):
                 kpts_len.append(np.linalg.norm(kpt_diff))
             kpts_len[0] = 0
             kpts_path_len.append(kpts_len)
-        kpts_path_len = [kpt for kpt_path_seg in kpts_path_len
-                                for kpt in kpt_path_seg]
+        kpts_path_len = [
+            kpt for kpt_path_seg in kpts_path_len for kpt in kpt_path_seg
+        ]
 
         kpts_path_len = np.cumsum(kpts_path_len)
 
@@ -386,18 +429,20 @@ class System(object):
             key_list.remove(ele)
         # for key in itertools.product(elements, repeat=2):
         #     key_list.append(''.join(key))
-        
+
         # compare hopping term and exponent
         l_consist = True
         for pair in key_list:
             scale_params = self.scale_params[pair]
             if scale_params is None:
                 continue
-            hop_orbit = set([hop.replace('V_', '') for hop in self.params[pair]
-                             if 'V_' in hop])
-            exp_orbit = set([hop.replace('n_', '') for hop in scale_params
-                             if 'n_' in hop])
-            
+            hop_orbit = set([
+                hop.replace('V_', '') for hop in self.params[pair]
+                if 'V_' in hop
+            ])
+            exp_orbit = set(
+                [hop.replace('n_', '') for hop in scale_params if 'n_' in hop])
+
             l_consist = l_consist and exp_orbit == hop_orbit
         return l_consist
 
@@ -414,7 +459,8 @@ class System(object):
                 return None
 
         atoms = self.structure.atoms
-        pair = get_pair(self.get_param_key(), atoms[atom_1_i].element, atoms[atom_2_i].element)
+        pair = get_pair(self.get_param_key(), atoms[atom_1_i].element,
+                        atoms[atom_2_i].element)
         scale_params = self.scale_params[pair]
         if scale_params is None:
             return self.params[pair]
@@ -427,12 +473,12 @@ class System(object):
             hop_params = self.params[pair]
             for key, hop in list(hop_params.items()):
                 orbit = key.replace('V_', 'n_')
-                params_scaled[key] = hop * factor ** scale_params[orbit]
+                params_scaled[key] = hop * factor**scale_params[orbit]
             return params_scaled
 
     def calc_volume(self, atom_i):
         """ calc volume of the tetrahedron 
-        """ 
+        """
         struct = self.structure
         dist_mat_vec = struct.dist_mat_vec
         bond_mat = struct.bond_mat
@@ -440,9 +486,10 @@ class System(object):
         bond = bond_mat[:, atom_i, :]
 
         d_mat = dist_vec[bond]
-        assert len(d_mat) == 4, 'tetrahedron required! # of bond = {}'.format(len(d_mat))
+        assert len(d_mat) == 4, 'tetrahedron required! # of bond = {}'.format(
+            len(d_mat))
         a, b, c, d = d_mat
-        vol = 1/6. * np.linalg.det([a-d, b-d, c-d])
+        vol = 1 / 6. * np.linalg.det([a - d, b - d, c - d])
         print(vol)
 
     def get_onsite_term(self, atom_i):
@@ -451,7 +498,8 @@ class System(object):
         def get_onsite_s(e_s, vol_ratio, alpha):
             return (e_s + alpha * vol_ratio) * np.eye(1)
 
-        def get_onsite_p(e_p, vol_ratio, alpha, beta_0, beta_1, delta_d, dir_cos):
+        def get_onsite_p(e_p, vol_ratio, alpha, beta_0, beta_1, delta_d,
+                         dir_cos):
             b_term_sum = 0
             for d, dc in zip(delta_d, dir_cos):
                 beta = beta_0 + beta_1 * d
@@ -459,13 +507,12 @@ class System(object):
                 lm = l * m
                 mn = m * n
                 nl = n * l
-                b_term = np.array([[l ** 2, lm, nl],
-                                   [lm, m ** 2, mn],
-                                   [nl, mn, n ** 2]]) - 1 / 3. * np.eye(3)
+                b_term = np.array([[l**2, lm, nl], [lm, m**2, mn],
+                                   [nl, mn, n**2]]) - 1 / 3. * np.eye(3)
                 b_term_sum += beta * b_term
             return (e_p + alpha * vol_ratio) * np.eye(3) + b_term_sum
             #return (alpha * vol_ratio) * np.eye(3) + b_term_sum+e_p
-            
+
         def get_onsite_d(e_d, vol_ratio, alpha, beta, gamma, delta_d, dir_cos):
             b_term_sum = 0
             g_term_sum = 0
@@ -476,23 +523,27 @@ class System(object):
                 mn = m * n
                 nl = n * l
                 irt3 = 1 / np.sqrt(3)
-                u = (l ** 2 - m ** 2) / 2.
-                v = (3 * n ** 2 - 1.) / 2 * irt3
-                b_term = np.array([[l ** 2, -lm, -nl, mn, -irt3*mn],
-                                   [-lm, m ** 2, -mn, -nl, -irt3*nl],
-                                   [-nl, -mn, n ** 2, 0, 2*irt3*lm],
-                                   [mn, -nl, 0, n**2, 2*irt3*u],
-                                   [-irt3*mn, -irt3*nl, 2*irt3*lm, 2*irt3*u, -n**2 + 2/3.]]) - 1 / 3. * np.eye(5)
-                g_term = np.array([[mn**2, nl*mn, lm*mn, mn*u, mn*v],
-                                   [nl*mn, nl**2, nl*lm, nl*u, nl*v],
-                                   [lm*mn, lm*nl, lm**2, lm*u, lm*v],
-                                   [mn*u, nl*u, lm*u, u**2, u*v],
-                                   [mn*v, nl*v, lm*v, u*v, v**2]])
+                u = (l**2 - m**2) / 2.
+                v = (3 * n**2 - 1.) / 2 * irt3
+                b_term = np.array([[l**2, -lm, -nl, mn, -irt3 * mn],
+                                   [-lm, m**2, -mn, -nl, -irt3 * nl],
+                                   [-nl, -mn, n**2, 0, 2 * irt3 * lm],
+                                   [mn, -nl, 0, n**2, 2 * irt3 * u],
+                                   [
+                                       -irt3 * mn, -irt3 * nl, 2 * irt3 * lm,
+                                       2 * irt3 * u, -n**2 + 2 / 3.
+                                   ]]) - 1 / 3. * np.eye(5)
+                g_term = np.array([[mn**2, nl * mn, lm * mn, mn * u, mn * v],
+                                   [nl * mn, nl**2, nl * lm, nl * u, nl * v],
+                                   [lm * mn, lm * nl, lm**2, lm * u, lm * v],
+                                   [mn * u, nl * u, lm * u, u**2, u * v],
+                                   [mn * v, nl * v, lm * v, u * v, v**2]])
 
                 b_term_sum += beta * b_term
                 g_term_sum += gamma * g_term
 
-            return (e_d + alpha * vol_ratio) * np.eye(5) + beta * b_term + gamma * g_term
+            return (e_d + alpha *
+                    vol_ratio) * np.eye(5) + beta * b_term + gamma * g_term
 
         def get_onsite_pd(beta_0, beta_1, gamma_0, gamma_1, delta_d, dir_cos):
             b_term_sum = 0
@@ -507,15 +558,15 @@ class System(object):
                 nl = n * l
                 lmn = l * m * n
                 irt3 = 1 / np.sqrt(3)
-                u = (l ** 2 - m ** 2) / 2.
-                v = (3 * n ** 2 - 1.) / 2 * irt3
+                u = (l**2 - m**2) / 2.
+                v = (3 * n**2 - 1.) / 2 * irt3
 
-                b_term = np.array([[0, n, m, l, -irt3*l],
-                                   [n, 0, l, -m, -irt3*m],
-                                   [m, l, 0, 0, 2*irt3*n]])
-                g_term = np.array([[lmn, nl*l, lm*l, l*u, l*v],
-                                   [mn*m, lmn, lm*m, m*u, m*v],
-                                   [mn*n, nl*n, lmn, n*u, n*v]])
+                b_term = np.array([[0, n, m, l, -irt3 * l],
+                                   [n, 0, l, -m, -irt3 * m],
+                                   [m, l, 0, 0, 2 * irt3 * n]])
+                g_term = np.array([[lmn, nl * l, lm * l, l * u, l * v],
+                                   [mn * m, lmn, lm * m, m * u, m * v],
+                                   [mn * n, nl * n, lmn, n * u, n * v]])
 
                 b_term_sum += beta * b_term
                 g_term_sum += gamma * g_term
@@ -538,13 +589,12 @@ class System(object):
                 mn = m * n
                 nl = n * l
                 irt3 = 1 / np.sqrt(3)
-                u = (l ** 2 - m ** 2) / 2.
-                v = (3 * n ** 2 - 1.) / 2 * irt3
+                u = (l**2 - m**2) / 2.
+                v = (3 * n**2 - 1.) / 2 * irt3
                 b_term = np.array([[mn, nl, lm, u, v]])
 
                 b_term_sum += beta * b_term
             return b_term_sum
-
 
         atoms = self.structure.atoms
         params = self.params[atoms[atom_i].element]
@@ -554,11 +604,12 @@ class System(object):
              self.scale_params[atoms[atom_i].element] is None):
             if "s" in atoms[atom_i].orbitals:
                 e_s = params['e_s']
-            if bool(set(['px', 'py','pz']) & (set(atoms[atom_i].orbitals))):
+            if bool(set(['px', 'py', 'pz']) & (set(atoms[atom_i].orbitals))):
                 if not isinstance(params['e_p'], list):
-                    e_p=[params['e_p']]*3
+                    e_p = [params['e_p']] * 3
                 else:
-                    e_p=params['e_p']
+                    e_p = params['e_p']
+
 
 #             if 'px' in  atoms[atom_i].orbitals:
 #                 e_p = params['e_p']
@@ -568,12 +619,12 @@ class System(object):
 #                 e_p = params['e_p']
 #             if 'pz' in  atoms[atom_i].orbitals:
 #                 e_p = params['e_p']
-            if 'dxy' in  atoms[atom_i].orbitals:
+            if 'dxy' in atoms[atom_i].orbitals:
                 e_d = params['e_d']
-            if 'S' in  atoms[atom_i].orbitals:
+            if 'S' in atoms[atom_i].orbitals:
                 e_S = params['e_S']
 
-            e_orbit_list =[]
+            e_orbit_list = []
             if 's' in atoms[atom_i].orbitals:
                 e_orbit_list += [e_s]
             if 'px' in atoms[atom_i].orbitals:
@@ -595,7 +646,7 @@ class System(object):
             if 'S' in atoms[atom_i].orbitals:
                 e_orbit_list += [e_S]
             return np.diag(e_orbit_list)
-            
+
         else:
             scale_params = self.scale_params[atoms[atom_i].element]
 
@@ -611,7 +662,7 @@ class System(object):
 
             atom = struct.atoms[atom_i]
             dir_cos = struct.dir_cos[:, atom_i, :, :][bond]
-            delta_d = (np.linalg.norm(d_mat, axis=-1) - d_0)/d_0
+            delta_d = (np.linalg.norm(d_mat, axis=-1) - d_0) / d_0
 
             orbitals = atom.orbitals
             n_orbitals = len(orbitals)
@@ -623,41 +674,50 @@ class System(object):
             # TODO generic
 
             vol = np.average(np.linalg.norm(d_mat, axis=-1))
-            vol = (vol**3 - d_0**3)/d_0**3
+            vol = (vol**3 - d_0**3) / d_0**3
             vol_ratio = vol
 
-            s_onsite = get_onsite_s(params['e_s'], vol_ratio, scale_params['a_s'])
-            S_onsite = get_onsite_s(params['e_S'], vol_ratio, scale_params['a_S'])
+            s_onsite = get_onsite_s(params['e_s'], vol_ratio,
+                                    scale_params['a_s'])
+            S_onsite = get_onsite_s(params['e_S'], vol_ratio,
+                                    scale_params['a_S'])
 
-            p_onsite = get_onsite_p(params['e_p'], vol_ratio, scale_params['a_p'], 
-                                    scale_params['b_p_0'], scale_params['b_p_1'], delta_d, dir_cos)
-            d_onsite = get_onsite_d(params['e_d'], vol_ratio, scale_params['a_d'], 
-                                    scale_params['b_d_0'], 0, delta_d, dir_cos)
-            
-            pd_onsite = get_onsite_pd(scale_params['b_pd_0'], scale_params['b_pd_1'], 
-                                      0, 0, delta_d, dir_cos)
+            p_onsite = get_onsite_p(params['e_p'], vol_ratio,
+                                    scale_params['a_p'], scale_params['b_p_0'],
+                                    scale_params['b_p_1'], delta_d, dir_cos)
+            d_onsite = get_onsite_d(params['e_d'], vol_ratio,
+                                    scale_params['a_d'], scale_params['b_d_0'],
+                                    0, delta_d, dir_cos)
+
+            pd_onsite = get_onsite_pd(scale_params['b_pd_0'],
+                                      scale_params['b_pd_1'], 0, 0, delta_d,
+                                      dir_cos)
 
             sp_onsite = get_onsite_sp(scale_params['b_sp_0'], dir_cos)
             Sp_onsite = get_onsite_sp(scale_params['b_Sp_0'], dir_cos)
             sd_onsite = get_onsite_sd(scale_params['b_sd_0'], dir_cos)
             Sd_onsite = get_onsite_sd(scale_params['b_Sd_0'], dir_cos)
-            sS_onsite = np.zeros((1,1))
-            pS_onsite = np.zeros((3,1))
-            
-            onsite_term = np.bmat(np.r_[np.c_[s_onsite, sp_onsite, sd_onsite, sS_onsite],
-                                        np.c_[sp_onsite.T, p_onsite, pd_onsite, pS_onsite],
-                                        np.c_[sd_onsite.T, pd_onsite.T, d_onsite, Sd_onsite.T],
-                                        np.c_[sS_onsite.T, Sp_onsite, Sd_onsite, S_onsite]])
+            sS_onsite = np.zeros((1, 1))
+            pS_onsite = np.zeros((3, 1))
+
+            onsite_term = np.bmat(np.r_[np.c_[s_onsite, sp_onsite, sd_onsite,
+                                              sS_onsite],
+                                        np.c_[sp_onsite.T, p_onsite, pd_onsite,
+                                              pS_onsite],
+                                        np.c_[sd_onsite.T, pd_onsite.T,
+                                              d_onsite, Sd_onsite.T],
+                                        np.c_[sS_onsite.T, Sp_onsite,
+                                              Sd_onsite, S_onsite]])
             return onsite_term
 
     def _get_soc_mat_i(self, atom_i):
-        # only for p_orbitals and need to specify all px py and pz 
+        # only for p_orbitals and need to specify all px py and pz
         #sigh got to improve on that
         atom = self.structure.atoms[atom_i]
         param = self.params[atom.element]
         orbitals = atom.orbitals
 
-        h_soc = np.zeros((len(orbitals)*2, len(orbitals)*2), dtype=complex)
+        h_soc = np.zeros((len(orbitals) * 2, len(orbitals) * 2), dtype=complex)
         if 'lambda' in list(param.keys()):
             assert ''.join(map(str, ['px', 'py', 'pz'])) in ''.join(map(str, orbitals)), \
                    'px, py, and pz should be in orbitals'
@@ -667,25 +727,30 @@ class System(object):
                 if 'p' in orbit:
                     break
             lambda_p = param['lambda']
-            h_soc_p = np.array([[0,   0, -1j,   0,   0,   1],
-                                [0,   0,   0,  1j,   0,   0],
-                                [0,   0,   0,   0,   0, -1j],
-                                [0,   0,   0,   0, -1j,   0],
-                                [0,  -1,   0,   0,   0,   0],
-                                [0,   0,   0,   0,   0,   0]]) * lambda_p
+            h_soc_p = np.array([[0, 0, -1j, 0, 0, 1], [0, 0, 0, 1j, 0, 0],
+                                [0, 0, 0, 0, 0, -1j], [0, 0, 0, 0, -1j, 0],
+                                [0, -1, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]
+                                ]) * lambda_p
             h_soc_p += h_soc_p.conj().T
-            # orbit_i * 2 for spin 
-            rows=[]
-            cnt=0
+            # orbit_i * 2 for spin
+            rows = []
+            cnt = 0
             if "px" in orbitals:
-                rows.append(0);rows.append(3);cnt+=1
+                rows.append(0)
+                rows.append(3)
+                cnt += 1
             if "py" in orbitals:
-                rows.append(1);rows.append(4);cnt+=1
+                rows.append(1)
+                rows.append(4)
+                cnt += 1
             if "pz" in orbitals:
-                rows.append(2);rows.append(5);cnt+=1
-            rows=np.sort(rows)
+                rows.append(2)
+                rows.append(5)
+                cnt += 1
+            rows = np.sort(rows)
             #h_soc_p=h_soc_p[np.ix_(rows,rows)]
-            h_soc[orbit_i*2: orbit_i*2+2*cnt, orbit_i*2: orbit_i*2+2*cnt] = h_soc_p
+            h_soc[orbit_i * 2:orbit_i * 2 + 2 * cnt,
+                  orbit_i * 2:orbit_i * 2 + 2 * cnt] = h_soc_p
             return h_soc
         else:
             return h_soc
@@ -703,18 +768,20 @@ from _params import get_hop_int
 
 class Hamiltonian(object):
     E_PREFIX = 'e_'
-    def __init__(self, structure,inter):
-        
-        self.structure=structure
-        self.inter=inter
-        t={}
-        for i in self.structure.atoms:
-            t[i.element]=i.orbitals
 
-        self.system = System(self.structure,t,self.inter)
+    def __init__(self, structure, inter):
+
+        self.structure = structure
+        self.inter = inter
+        t = {}
+        for i in self.structure.atoms:
+            t[i.element] = i.orbitals
+
+        self.system = System(self.structure, t, self.inter)
         self.n_orbitals = len(self.system.all_orbitals)
-        self.H_wo_g = np.zeros((self.system.structure.max_image, 
-                                self.n_orbitals, self.n_orbitals), dtype=complex)
+        self.H_wo_g = np.zeros((self.system.structure.max_image,
+                                self.n_orbitals, self.n_orbitals),
+                               dtype=complex)
         self.calc_ham_wo_k()
         self.soc_mat = self.system.get_soc_mat()
 
@@ -733,129 +800,148 @@ class Hamiltonian(object):
 
         return h
 
-    def _sol_ham(self,ham,eig_vectors=False,spin=False):
-        ham_use=ham
-        if np.max(ham_use-ham_use.T.conj())>1.0E-9:
+    def _sol_ham(self, ham, eig_vectors=False, spin=False):
+        ham_use = ham
+        if np.max(ham_use - ham_use.T.conj()) > 1.0E-9:
             raise Exception("\n\nHamiltonian matrix is not hermitian?!")
-        if eig_vectors==False:
-            eval=np.linalg.eigvalsh(ham_use)
-            eval=self.clean_eig(eval)
-            return np.array(eval,dtype=float)
+        if eig_vectors == False:
+            eval = np.linalg.eigvalsh(ham_use)
+            eval = self.clean_eig(eval)
+            return np.array(eval, dtype=float)
         else:
-            (eval,eig)=np.linalg.eigh(ham_use)
-            eig=eig.T
-            (eval,eig)=self.clean_eig(eval,eig)
-            return (eval,eig)
+            (eval, eig) = np.linalg.eigh(ham_use)
+            eig = eig.T
+            (eval, eig) = self.clean_eig(eval, eig)
+            return (eval, eig)
 
-    def solve_kpath(self,k_list=None,eig_vectors=False,soc=True):
-            """ solve along a give k path 
+    def solve_kpath(self, k_list=None, eig_vectors=False, soc=True):
+        """ solve along a give k path 
             k_list: list of k points (can be generated by get_kpts)
             returns:
             eig:
             eig_vectors: spits out the eigvectors in the format [band*2,kpoint,orbital] (bands*2 for spins)
     """
-            if not (k_list is None):
-                nkp=len(k_list)
-                if soc==True:
-                    ret_eval=np.zeros((self.n_orbitals*2,nkp),dtype=float)
-                    ret_evec=np.zeros((self.n_orbitals*2,nkp,self.n_orbitals*2),dtype=complex)
+        if not (k_list is None):
+            nkp = len(k_list)
+            if soc == True:
+                ret_eval = np.zeros((self.n_orbitals * 2, nkp), dtype=float)
+                ret_evec = np.zeros(
+                    (self.n_orbitals * 2, nkp, self.n_orbitals * 2),
+                    dtype=complex)
+            else:
+                print(2)
+                ret_eval = np.zeros((self.n_orbitals, nkp), dtype=float)
+                ret_evec = np.zeros((self.n_orbitals, nkp, self.n_orbitals),
+                                    dtype=complex)
+            for i, k in enumerate(k_list):
+                ham = self.get_ham(k, l_soc=soc)
+                if eig_vectors == False:
+                    eval = self._sol_ham(ham, eig_vectors=eig_vectors)
+                    ret_eval[:, i] = eval[:]
                 else:
-                    print(2)
-                    ret_eval=np.zeros((self.n_orbitals,nkp),dtype=float)
-                    ret_evec=np.zeros((self.n_orbitals,nkp,self.n_orbitals),dtype=complex)
-                for i,k in enumerate(k_list):
-                    ham=self.get_ham(k,l_soc=soc)
-                    if eig_vectors==False:
-                        eval=self._sol_ham(ham,eig_vectors=eig_vectors)
-                        ret_eval[:,i]=eval[:]
-                    else:
-                        (eval,evec)=self._sol_ham(ham,eig_vectors=eig_vectors)
-                        ret_eval[:,i]=eval[:]
-                        ret_evec[:,i,:]=evec[:,:]
-                if eig_vectors==False:
-                    # indices of eval are [band,kpoint]
-                    return ret_eval
-                else:
-                    # indices of eval are [band,kpoint] for evec are [band,kpoint,orbital,(spin)]
-                    return (ret_eval,ret_evec)
-                   
-    def get_dos(self,energy,eig=None,w=1e-2,nk=[20,20,20]):
+                    (eval, evec) = self._sol_ham(ham, eig_vectors=eig_vectors)
+                    ret_eval[:, i] = eval[:]
+                    ret_evec[:, i, :] = evec[:, :]
+            if eig_vectors == False:
+                # indices of eval are [band,kpoint]
+                return ret_eval
+            else:
+                # indices of eval are [band,kpoint] for evec are [band,kpoint,orbital,(spin)]
+                return (ret_eval, ret_evec)
+
+    def get_dos(self, energy, eig=None, w=1e-2, nk=[20, 20, 20]):
         '''
         energy: energy range to get the DOS 
         eig: could passs the energy eig values (useful if the system is 2D or want to generate your own k mesh)
         nk: k point sampling 1x3 for x,y,z directions
         w: gaussian width
         '''
-        if eig!=None:
-            E=eig
+        if eig != None:
+            E = eig
         else:
-            kx=np.linspace(0,1,nk[0])
-            ky=np.linspace(0,1,nk[1])
-            kz=np.linspace(0,1,nk[2])
-            E=[]
+            kx = np.linspace(0, 1, nk[0])
+            ky = np.linspace(0, 1, nk[1])
+            kz = np.linspace(0, 1, nk[2])
+            E = []
             for i in kx:
                 for j in ky:
                     for k in kz:
-                        E.append(self.solve_k([i,j,k]))
-        D=0
+                        E.append(self.solve_k([i, j, k]))
+        D = 0
         for i in np.array(E).flatten():
-            D=D+np.exp(-(energy - i)**2 / (2 * w**2)) / (np.pi * w * np.sqrt(2))
-        return D        
-    def solve_k(self,k_point=None,eig_vectors=False):
+            D = D + np.exp(-(energy - i)**2 /
+                           (2 * w**2)) / (np.pi * w * np.sqrt(2))
+        return D
+
+    def solve_k(self, k_point=None, eig_vectors=False):
         if not (k_point is None):
-            if eig_vectors==False:
-                eval=self.solve_kpath([k_point],eig_vectors=eig_vectors)
+            if eig_vectors == False:
+                eval = self.solve_kpath([k_point], eig_vectors=eig_vectors)
                 # indices of eval are [band]
-                return eval[:,0]
+                return eval[:, 0]
             else:
-                (eval,evec)=self.solve_kpath([k_point],eig_vectors=eig_vectors)
+                (eval, evec) = self.solve_kpath([k_point],
+                                                eig_vectors=eig_vectors)
                 # indices of eval are [band] for evec are [band,orbital,spin]
-                return (eval[:,0],evec[:,0,:]) 
+                return (eval[:, 0], evec[:, 0, :])
 
-    def clean_eig(self,eval,eig=None):
-        eval=np.array(eval.real,dtype=float)
-        args=eval.argsort()
-        eval=eval[args]
+    def clean_eig(self, eval, eig=None):
+        eval = np.array(eval.real, dtype=float)
+        args = eval.argsort()
+        eval = eval[args]
         if not (eig is None):
-            eig=eig[args]
-            return (eval,eig)
-        return eval            
+            eig = eig[args]
+            return (eval, eig)
+        return eval
 
-    def get_kpts(self,path,nk):
-        return self.system.get_kpts(path,nk)
-    def k_cart2red(self,k):
-        red2cart=np.array([self.structure.get_lattice()[i][:len(k)] for i in range(len(k))]).transpose()
+    def get_kpts(self, path, nk):
+        return self.system.get_kpts(path, nk)
+
+    def k_cart2red(self, k):
+        red2cart = np.array([
+            self.structure.get_lattice()[i][:len(k)] for i in range(len(k))
+        ]).transpose()
         cart2red = np.linalg.inv(red2cart)
         return cart2red @ np.array(k)
-    def k_red2cart(self,k):
-        red2cart=np.array([self.structure.get_lattice()[i][:len(k)] for i in range(len(k))]).transpose()
+
+    def k_red2cart(self, k):
+        red2cart = np.array([
+            self.structure.get_lattice()[i][:len(k)] for i in range(len(k))
+        ]).transpose()
         cart2red = np.linalg.inv(red2cart)
         return red2cart @ np.array(k)
+
     def calc_g(self, kpt):
         """ calc g mat as func of bond matrix, dist_mat_vec, and k
             g mat is phase factor
         """
         rec_lat = self.system.structure.lattice.get_rec_lattice()
         kpt_cart = np.dot(kpt, rec_lat)
-        g_mat = np.zeros((self.system.structure.max_image, 
-                          self.n_orbitals, self.n_orbitals), dtype=complex)
+        g_mat = np.zeros((self.system.structure.max_image, self.n_orbitals,
+                          self.n_orbitals),
+                         dtype=complex)
 
         dist_mat_vec = self.system.structure.dist_mat_vec
         bond_mat = self.system.structure.bond_mat
 
-        for ind_1, (atom_1_i, orbit_1_i, element_1, orbit_1) in enumerate(self.system.all_iter):
-            for ind_2, (atom_2_i, orbit_2_i, element_2, orbit_2) in enumerate(self.system.all_iter):
+        for ind_1, (atom_1_i, orbit_1_i, element_1,
+                    orbit_1) in enumerate(self.system.all_iter):
+            for ind_2, (atom_2_i, orbit_2_i, element_2,
+                        orbit_2) in enumerate(self.system.all_iter):
                 for image_ind in range(self.system.structure.max_image):
                     if bond_mat[image_ind, atom_1_i, atom_2_i] == 0:
                         continue
                     dist_vec = dist_mat_vec[image_ind, atom_1_i, atom_2_i, :]
 
-                    phase = np.exp(2.*np.pi*1j * np.dot(kpt_cart, dist_vec))
-                    g_mat[image_ind, ind_1, ind_2] = phase 
+                    phase = np.exp(2. * np.pi * 1j *
+                                   np.dot(kpt_cart, dist_vec))
+                    g_mat[image_ind, ind_1, ind_2] = phase
         # non-translated image_ind is self.system.structure.max_image/2
-        g_mat[int(self.system.structure.max_image/2), :, :] += np.eye(self.n_orbitals, dtype=complex)
+        g_mat[int(self.system.structure.max_image / 2), :, :] += np.eye(
+            self.n_orbitals, dtype=complex)
         return g_mat
-    def plot_kproj(self,evals,vecs,k_dist,index,ax=None,cmap="bwr"):
+
+    def plot_kproj(self, evals, vecs, k_dist, index, ax=None, cmap="bwr"):
         """ plots band structure projected on to subbands
         vecs: eigenvecs in format [band*2,kpoint,orbital] (bands*2 for spins)
         evals: eigen values
@@ -871,16 +957,17 @@ class Hamiltonian(object):
         
         """
         index_nums = index
-        colors=[]
+        colors = []
         for j in range(vecs.shape[0]):
-            col=[]
+            col = []
             for i in range(len(k_dist)):
-                col.append(np.linalg.norm(vecs[j,i,:][index_nums], ord=2))
+                col.append(np.linalg.norm(vecs[j, i, :][index_nums], ord=2))
             colors.append(col)
 
         from matplotlib.collections import LineCollection
         import matplotlib.pyplot as plt
         from matplotlib.colors import ListedColormap, BoundaryNorm
+
         def make_segments(x, y):
             '''
             Create list of line segments from x and y coordinates, in the correct format for LineCollection:
@@ -891,15 +978,23 @@ class Hamiltonian(object):
             segments = np.concatenate([points[:-1], points[1:]], axis=1)
 
             return segments
-        def clear_frame(ax=None): 
+
+        def clear_frame(ax=None):
             # Taken from a post by Tony S Yu
-            if ax is None: 
-                ax = plt.gca() 
-            ax.xaxis.set_visible(False) 
-            ax.yaxis.set_visible(False) 
-            for spine in ax.spines.itervalues(): 
-                spine.set_visible(False) 
-        def colorline(x, y, z=None, cmap=plt.get_cmap(cmap), norm=plt.Normalize(0.0, 1.0), linewidth=2, alpha=1.0):
+            if ax is None:
+                ax = plt.gca()
+            ax.xaxis.set_visible(False)
+            ax.yaxis.set_visible(False)
+            for spine in ax.spines.itervalues():
+                spine.set_visible(False)
+
+        def colorline(x,
+                      y,
+                      z=None,
+                      cmap=plt.get_cmap(cmap),
+                      norm=plt.Normalize(0.0, 1.0),
+                      linewidth=2,
+                      alpha=1.0):
             '''
             Plot a colored line with coordinates x and y
             Optionally specify colors in the array z
@@ -911,33 +1006,38 @@ class Hamiltonian(object):
                 z = np.linspace(0.0, 1.0, len(x))
 
             # Special case if a single number:
-            if not hasattr(z, "__iter__"):  # to check for numerical input -- this is a hack
+            if not hasattr(z, "__iter__"
+                           ):  # to check for numerical input -- this is a hack
                 z = np.array([z])
 
             z = np.asarray(z)
 
             segments = make_segments(x, y)
-            lc = LineCollection(segments, array=z, cmap=cmap, norm=norm, linewidth=linewidth, alpha=alpha)
+            lc = LineCollection(segments,
+                                array=z,
+                                cmap=cmap,
+                                norm=norm,
+                                linewidth=linewidth,
+                                alpha=alpha)
 
             ax = plt.gca()
             ax.add_collection(lc)
 
             return lc
+
         x = k_dist
         for i in range(vecs.shape[0]):
 
             y = evals[i]
 
-
-
-            colorline(x, y,z=colors[i],alpha=1)
+            colorline(x, y, z=colors[i], alpha=1)
 
         ax.set_xlim(x.min(), x.max())
         ax.set_ylim(evals.min(), evals.max())
-        ax.axhline(0,c="k",linestyle=":",linewidth=1)
+        ax.axhline(0, c="k", linestyle=":", linewidth=1)
         #ax.axvline(0.5,c="k",linestyle=":",linewidth=1)
         return ax
-            	
+
     def calc_ham_wo_k(self):
         """ calc hamiltonian with out k
             all g factor is set to 1
@@ -950,7 +1050,8 @@ class Hamiltonian(object):
                 return dist_vec / np.linalg.norm(dist_vec)
 
         def get_ind(atom_1_i, orbit_1_i, element_1, orbit_1):
-            return self.system.all_iter.index((atom_1_i, orbit_1_i, element_1, orbit_1))
+            return self.system.all_iter.index(
+                (atom_1_i, orbit_1_i, element_1, orbit_1))
 
         # params = self.system.params
 
@@ -962,26 +1063,35 @@ class Hamiltonian(object):
         for atom_1_i, atom_1 in enumerate(self.system.structure.atoms):
             for atom_2_i, atom_2 in enumerate(self.system.structure.atoms):
                 for image_ind in range(self.system.structure.max_image):
-                    if image_ind == self.system.structure.max_image/2 and atom_1_i == atom_2_i:
+                    if image_ind == self.system.structure.max_image / 2 and atom_1_i == atom_2_i:
                         continue
 
                     if bond_mat[image_ind, atom_1_i, atom_2_i] == 0:
                         continue
-                    param_element = self.system.get_hop_params(atom_1_i, atom_2_i, image_ind)
+                    param_element = self.system.get_hop_params(
+                        atom_1_i, atom_2_i, image_ind)
 
                     # get direction cosines
-                    l, m, n = self.system.structure.get_dir_cos(image_ind, atom_1_i, atom_2_i)
-                    param_lmn = dict({'l': l, 'm': m, 'n': n,})
+                    l, m, n = self.system.structure.get_dir_cos(
+                        image_ind, atom_1_i, atom_2_i)
+                    param_lmn = dict({
+                        'l': l,
+                        'm': m,
+                        'n': n,
+                    })
                     param_element.update(param_lmn)
                     hop_int_pair = get_hop_int(**param_element)
 
                     for orbit_1_i, orbit_1 in enumerate(atom_1.orbitals):
                         for orbit_2_i, orbit_2 in enumerate(atom_2.orbitals):
-                            hop_int_ = hop_int_pair[Hamiltonian.get_orb_ind(orbit_1)][Hamiltonian.get_orb_ind(orbit_2)]                            
-                            ind_1 = get_ind(atom_1_i, orbit_1_i, atom_1.element, orbit_1)
-                            ind_2 = get_ind(atom_2_i, orbit_2_i, atom_2.element, orbit_2)
+                            hop_int_ = hop_int_pair[Hamiltonian.get_orb_ind(
+                                orbit_1)][Hamiltonian.get_orb_ind(orbit_2)]
+                            ind_1 = get_ind(atom_1_i, orbit_1_i,
+                                            atom_1.element, orbit_1)
+                            ind_2 = get_ind(atom_2_i, orbit_2_i,
+                                            atom_2.element, orbit_2)
                             self.H_wo_g[image_ind, ind_1, ind_2] = hop_int_
-        
+
         # real hermitian -> symmetric
         # self.H_wo_g += np.transpose(self.H_wo_g, [0, 2, 1])#[range(self.H_wo_g.shape[0])[::-1],:,:]
 
@@ -993,9 +1103,7 @@ class Hamiltonian(object):
 
             onsite_i = self.system.get_onsite_term(atom_i)
 
-            self.H_wo_g[int(self.system.structure.max_image/2), 
-                        H_ind: H_ind+len_orbitals, H_ind: H_ind+len_orbitals] = onsite_i
+            self.H_wo_g[int(self.system.structure.max_image / 2),
+                        H_ind:H_ind + len_orbitals,
+                        H_ind:H_ind + len_orbitals] = onsite_i
             H_ind += len_orbitals
-            
-
-    
