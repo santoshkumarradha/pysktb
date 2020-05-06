@@ -41,7 +41,7 @@ Example usage shown in 	[examples.ipynb](./examples/examples.ipynb)
    <img src="./examples/Sb-flat.png" style="max-height: 70px; max-width: 70px;" >
    - preprint of Higher Order Topological states in 2D Sb https://arxiv.org/abs/2003.12656
    <img src="./examples/Sb_buckled.png" style="max-height: 70px; max-width: 70px;" >
- 4. Low buckled Sb Surface states with SOC - Topological Crystalline Insulator
+4. Low buckled Sb Surface states with SOC - Topological Crystalline Insulator
  <img src="./examples/buckled_sb_SOC.png" style="max-height: 70px; max-width: 70px;" >
 
 
