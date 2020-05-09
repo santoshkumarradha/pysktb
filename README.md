@@ -1,4 +1,4 @@
-
+i
 <img src="./logo.png" height="200" >
 Scientific Python package for solving Slater Koster tight-binding hamiltonian
                             
@@ -52,12 +52,13 @@ Example usage shown in 	[examples.ipynb](./examples/examples.ipynb)
 <img src="./examples/pysktb_parallel.png" height="200" >
 
 ### Features to be added
+   - Complete pymatgen integration (high on priority)
+   - Berry phase calculation (high on priority) *already implemented need to interface*
    - ~Parallelization on kpoints~ and orbitals.
    - Spin Orbit Coupling for d,f
    - Bogoliubov-de-Gennes (BdG) solutions for the given system for Superconductivity 
    - Interface with [ASE](https://wiki.fysik.dtu.dk/ase/) structures
    - Create finite structures and slabs for Topological calculations within the code *(requires pymatgen right now)*
-   - Berry phase calculation (high on priority)
    - Greens function DOS
    - Convert all operations to sympy, so that one can output analytical Tightbinding matrix elements for ease of access 
 
