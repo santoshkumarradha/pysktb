@@ -23,6 +23,7 @@ import multiprocessing
 from joblib import Parallel, delayed
 import numba as nb
 import jit_modules as jit_modules
+from src import energitics
 try:
     from scipy.linalg import block_diag, eigh
     from scipy import sparse
@@ -1051,6 +1052,13 @@ class Hamiltonian(object):
             g_mat[int(self.system.structure.max_image / 2), :, :] += np.eye(
                 self.n_orbitals, dtype=complex)
         return g_mat
+
+    def total_energy(self, filled_band=0, nk=10, dim=3, soc=True):
+        return energitics.get_totalenergy(deepcopy(self),
+                                          filled_band=filled_band,
+                                          nk=nk,
+                                          dim=dim,
+                                          soc=soc)
 
     def plot_kproj(self, evals, vecs, k_dist, index, ax=None, cmap="bwr"):
         """ plots band structure projected on to subbands
