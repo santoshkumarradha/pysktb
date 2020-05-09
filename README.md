@@ -8,6 +8,7 @@ A python package in development for creating and solving slater koster tight-bin
 ### Features
 
   - Generate s,p,d interactions in any given lattice
+  - Total energy *for insulators and semimetals*
   - Specify range of interaction with more then Nearest neibghor
   - Spin Polarized calculations
   - Spin orbit coupling *(only for p orbitals as of now)*
@@ -55,6 +56,7 @@ Example usage shown in 	[examples.ipynb](./examples/examples.ipynb)
    - Complete pymatgen integration (high on priority)
    - Berry phase calculation (high on priority) *already implemented need to interface*
    - ~Parallelization on kpoints~ and orbitals.
+   - ~scipy sparse matrix optimized~
    - Spin Orbit Coupling for d,f
    - Bogoliubov-de-Gennes (BdG) solutions for the given system for Superconductivity 
    - Interface with [ASE](https://wiki.fysik.dtu.dk/ase/) structures
