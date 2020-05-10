@@ -36,7 +36,7 @@ Example usage shown in 	[examples.ipynb](./examples/examples.ipynb)
   <img src="./examples/sp-chain-dos.png" height="200" >
 2. Graphene and band colorplot in BZ
   <img src="./examples/graphene.png" style="max-height: 70px; max-width: 70px;" >
-2. Intrinsic SOC Rashba effect in Halide Perovskites
+2. Intrinsic Spin-Orbit-Coupling Rashba effect in Halide Perovskites
   <img src="./examples/Perovskite_soc.png" style="max-height: 70px; max-width: 70px;" >
 3. Buckled antimony Sb 
    - preprint of Dirac cones merging in 2D Sb https://arxiv.org/abs/1912.03755
