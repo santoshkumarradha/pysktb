@@ -1,4 +1,3 @@
-i
 <img src="./logo.png" height="200" >
 Scientific Python package for solving Slater Koster tight-binding hamiltonian
                             
