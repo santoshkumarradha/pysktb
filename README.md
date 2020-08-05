@@ -9,11 +9,11 @@
 ![Contributions welcome](https://img.shields.io/badge/contributions-welcome-orange.svg)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-<p align="center">Scientific Python package for solving Slater Koster tight-binding hamiltonian</p>
+<p align="center">Scientific Python package for solving Slater Koster tight-binding hamiltonian. A python package in development for creating and solving slater koster tight-binding hamiltonians for various 1D 2D and 3D systems from topological insulators to strong correlations.</p>
 
                             
 
-A python package in development for creating and solving slater koster tight-binding hamiltonians for various 1D 2D and 3D systems.
+
 
 ## Features
 
@@ -77,6 +77,7 @@ Example usage shown in 	[examples.ipynb](./examples/examples.ipynb)
    - Create finite structures and slabs for Topological calculations within the code *(requires pymatgen right now)*
    - Greens function DOS
    - Convert all operations to sympy, so that one can output analytical Tightbinding matrix elements for ease of access 
+   - Low energy k.p hamiltonian from sympy
 ## License
 
 [MIT](LICENSE) 
