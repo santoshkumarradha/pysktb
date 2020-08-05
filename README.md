@@ -43,7 +43,7 @@ Example usage shown in 	[examples.ipynb](./examples/examples.ipynb)
 <p align="center">
 1. 1D chain of sp (example of 1D topological Crystiline insulator *SSH*)
   
-  <img src="./examples/sp-chain.png" style="max-height: 70px; max-width: 70px;" >
+ <img src="./examples/sp-chain.png" style="max-height: 70px; max-width: 70px;" >
   
   - with orbital projection on s
   <img src="./examples/sp-chain-proj.png" style="max-height: 70px; max-width: 70px;" >
