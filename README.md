@@ -1,10 +1,20 @@
-<img src="./logo.png" height="200" >
-Scientific Python package for solving Slater Koster tight-binding hamiltonian
+<p align="center"><img width=30.5% src="./logo.png"></p>
+<p align="center">Scientific Python package for solving Slater Koster tight-binding hamiltonian</p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+![Python](https://img.shields.io/badge/python-v3.6+-blue.svg)
+[![Build Status](https://travis-ci.org/anfederico/Clairvoyant.svg?branch=master)](https://travis-ci.org/anfederico/Clairvoyant)
+![Dependencies](https://img.shields.io/badge/dependencies-up%20to%20date-brightgreen.svg)
+[![GitHub Issues](https://img.shields.io/github/issues/anfederico/Clairvoyant.svg)](https://github.com/anfederico/Clairvoyant/issues)
+![Contributions welcome](https://img.shields.io/badge/contributions-welcome-orange.svg)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+
+
+
                             
 
 A python package in development for creating and solving slater koster tight-binding hamiltonians for various 1D 2D and 3D systems.
 
-### Features
+## Features
 
   - Generate s,p,d interactions in any given lattice
   - Total energy *for insulators and semimetals*
@@ -16,7 +26,7 @@ A python package in development for creating and solving slater koster tight-bin
   - JIT optimized with numba
   - Parallelization on kpoints
 
-### Installation
+## Installation
  1. Copy the files _params.py and pysktb.py to the working directory
  2. Install the modules in requirements.txt.
  ```console
@@ -25,9 +35,11 @@ A python package in development for creating and solving slater koster tight-bin
  3. Import them and use !
 
  
-### Examples
+## Examples
 
 Example usage shown in 	[examples.ipynb](./examples/examples.ipynb)
+
+<p align="center">
 1. 1D chain of sp (example of 1D topological Crystiline insulator *SSH*)
   <img src="./examples/sp-chain.png" style="max-height: 70px; max-width: 70px;" >
   - with orbital projection on s
@@ -45,15 +57,15 @@ Example usage shown in 	[examples.ipynb](./examples/examples.ipynb)
    <img src="./examples/Sb_buckled.png" style="max-height: 70px; max-width: 70px;" >
 4. Low buckled Sb Surface states with SOC - Topological Crystalline Insulator
  <img src="./examples/buckled_sb_SOC.png" style="max-height: 70px; max-width: 70px;" >
+</p>
 
-
-### Optimized 
+## Optimized 
   - with `jit`
 <img src="./examples/pysktb_numba.png" height="200" >
 - Parallelized over k
 <img src="./examples/pysktb_parallel.png" height="200" >
 
-### Features to be added
+## Features to be added
    - Complete pymatgen integration (high on priority)
    - Berry phase calculation (high on priority) *already implemented need to interface*
    - ~Parallelization on kpoints~ and orbitals.
@@ -64,4 +76,6 @@ Example usage shown in 	[examples.ipynb](./examples/examples.ipynb)
    - Create finite structures and slabs for Topological calculations within the code *(requires pymatgen right now)*
    - Greens function DOS
    - Convert all operations to sympy, so that one can output analytical Tightbinding matrix elements for ease of access 
+## License
 
+[MIT](LICENSE) 
