@@ -1,5 +1,6 @@
 <p align="center"><img width=30.5% src="./logo.png"></p>
-<p align="center">Scientific Python package for solving Slater Koster tight-binding hamiltonian</p>
+
+
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 ![Python](https://img.shields.io/badge/python-v3.6+-blue.svg)
 [![Build Status](https://travis-ci.org/anfederico/Clairvoyant.svg?branch=master)](https://travis-ci.org/anfederico/Clairvoyant)
@@ -8,7 +9,7 @@
 ![Contributions welcome](https://img.shields.io/badge/contributions-welcome-orange.svg)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-
+<p align="center">Scientific Python package for solving Slater Koster tight-binding hamiltonian</p>
 
                             
 
