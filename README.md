@@ -40,7 +40,7 @@
 
 Example usage shown in 	[examples.ipynb](./examples/examples.ipynb)
 
-<p align="center">
+
 1. 1D chain of sp (example of 1D topological Crystiline insulator *SSH*)
   
  <img src="./examples/sp-chain.png" style="max-height: 70px; max-width: 70px;" >
@@ -74,7 +74,7 @@ Example usage shown in 	[examples.ipynb](./examples/examples.ipynb)
 
  <img src="./examples/buckled_sb_SOC.png" style="max-height: 70px; max-width: 70px;" >
  
-</p>
+
 
 ## Optimized 
   - with `jit`
