@@ -97,6 +97,7 @@ Example usage shown in 	[examples.ipynb](./examples/examples.ipynb)
    
 ## Citation
 If you are using the code, please consider citing it with the followig bib
+[![DOI](https://zenodo.org/badge/255115236.svg)](https://zenodo.org/badge/latestdoi/255115236)
 ```python
 @misc{https://doi.org/10.5281/zenodo.4311595,
   doi = {10.5281/ZENODO.4311595},
