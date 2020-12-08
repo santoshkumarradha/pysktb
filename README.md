@@ -12,7 +12,7 @@
 <p align="center">Scientific Python package for solving Slater Koster tight-binding hamiltonian. A python package in development for creating and solving slater koster tight-binding hamiltonians for various 1D 2D and 3D systems from topological insulators to strong correlations.</p>
 
                             
-
+[![DOI](https://zenodo.org/badge/255115236.svg)](https://zenodo.org/badge/latestdoi/255115236)
 
 
 ## Features
@@ -94,6 +94,21 @@ Example usage shown in 	[examples.ipynb](./examples/examples.ipynb)
    - Greens function DOS
    - Convert all operations to sympy, so that one can output analytical Tightbinding matrix elements for ease of access 
    - Low energy k.p hamiltonian from sympy
+   
+## Citation
+If you are using the code, please consider citing it with the followig bib
+```python
+@misc{https://doi.org/10.5281/zenodo.4311595,
+  doi = {10.5281/ZENODO.4311595},
+  url = {https://zenodo.org/record/4311595},
+  author = {Radha,  Santosh Kumar},
+  title = {santoshkumarradha/pysktb: Tightbinding Electronic structure codes},
+  publisher = {Zenodo},
+  year = {2020},
+  copyright = {Open Access}
+}
+```
+   
 ## License
 
 [MIT](LICENSE) 
