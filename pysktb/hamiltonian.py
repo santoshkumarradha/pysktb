@@ -38,6 +38,10 @@ numba = True
 
 
 from ._params import get_hop_int
+from .system import System
+from .atom import Atom
+from .lattice import Lattice
+from .structure import Structure
 
 
 def parallel_solove_eval(k, ham1, soc):
