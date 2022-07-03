@@ -22,7 +22,7 @@ from numpy import sqrt
 import multiprocessing
 from joblib import Parallel, delayed
 import numba as nb
-import jit_modules as jit_modules
+import pysktb.jit_modules as jit_modules
 from src import energitics
 try:
 	from scipy.linalg import block_diag, eigh
@@ -785,7 +785,7 @@ class System(object):
 			soc_i_list.append(soc_i)
 
 		return scipy.linalg.block_diag(*soc_i_list)
-from _params import get_hop_int
+from pysktb._params import get_hop_int
 
 
 def parallel_solove_eval(k, ham1, soc):
