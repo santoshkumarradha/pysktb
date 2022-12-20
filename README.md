@@ -28,12 +28,9 @@
   - Parallelization on kpoints
 
 ## Installation
- 1. Copy the files _params.py and pysktb.py to the working directory
- 2. Install the modules in requirements.txt.
- ```console
- pip install -U -r requirements.txt
- ```
- 3. Import them and use !
+```console
+pip install pysktb
+```
 
  
 ## Examples
