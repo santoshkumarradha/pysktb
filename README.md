@@ -38,49 +38,49 @@
  
 ## Examples
 
-Example usage shown in 	[examples.ipynb](./examples/examples.ipynb)
+Example usage shown in 	[examples.ipynb](./examples/data/examples.ipynb)
 
 
 1. 1D chain of sp (example of 1D topological Crystiline insulator *SSH*)
   
- <img src="./examples/sp-chain.png" style="max-height: 70px; max-width: 70px;" >
+ <img src="./examples/data/sp-chain.png" style="max-height: 70px; max-width: 70px;" >
   
   - with orbital projection on s
-  <img src="./examples/sp-chain-proj.png" style="max-height: 70px; max-width: 70px;" >
+  <img src="./examples/data/sp-chain-proj.png" style="max-height: 70px; max-width: 70px;" >
   
   - DOS
   
-  <img src="./examples/sp-chain-dos.png" height="200" >
+  <img src="./examples/data/sp-chain-dos.png" height="200" >
   
 2. Graphene and band colorplot in BZ
 
-  <img src="./examples/graphene.png" style="max-height: 70px; max-width: 70px;" >
+  <img src="./examples/data/graphene.png" style="max-height: 70px; max-width: 70px;" >
   
 2. Intrinsic Spin-Orbit-Coupling Rashba effect in Halide Perovskites
 
-  <img src="./examples/Perovskite_soc.png" style="max-height: 70px; max-width: 70px;" >
+  <img src="./examples/data/Perovskite_soc.png" style="max-height: 70px; max-width: 70px;" >
   
 3. Buckled antimony Sb 
 
    - preprint of Dirac cones merging in 2D Sb https://arxiv.org/abs/1912.03755
    
-   <img src="./examples/Sb-flat.png" style="max-height: 70px; max-width: 70px;" >
+   <img src="./examples/data/Sb-flat.png" style="max-height: 70px; max-width: 70px;" >
    
    - preprint of Higher Order Topological states in 2D Sb https://arxiv.org/abs/2003.12656
    
-   <img src="./examples/Sb_buckled.png" style="max-height: 70px; max-width: 70px;" >
+   <img src="./examples/data/Sb_buckled.png" style="max-height: 70px; max-width: 70px;" >
    
 4. Low buckled Sb Surface states with SOC - Topological Crystalline Insulator
 
- <img src="./examples/buckled_sb_SOC.png" style="max-height: 70px; max-width: 70px;" >
+ <img src="./examples/data/buckled_sb_SOC.png" style="max-height: 70px; max-width: 70px;" >
  
 
 
 ## Optimized 
   - with `jit`
-<img src="./examples/pysktb_numba.png" height="200" >
+<img src="./examples/data/pysktb_numba.png" height="200" >
 - Parallelized over k
-<img src="./examples/pysktb_parallel.png" height="200" >
+<img src="./examples/data/pysktb_parallel.png" height="200" >
 
 ## Features to be added
    - Complete pymatgen integration (high on priority)
