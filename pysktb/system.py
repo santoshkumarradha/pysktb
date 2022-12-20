@@ -14,21 +14,18 @@ class System(object):
         self.all_orbitals = self.get_all_orbitals()
         self.all_iter = self.get_all_iter()
         self.params = parameters
-        sc = dict()
-        for i in [
-            "".join(k)
-            for k in [
-                j for j in itertools.product([i for i in list(self.orbitals.keys())], repeat=2)
+        sc = {
+            i: None
+            for i in [
+                "".join(k)
+                for k in list(itertools.product(list(list(self.orbitals.keys())), repeat=2))
             ]
-        ]:
-            sc[i] = None
+        }
         self.scale_params = sc  # scale_params
 
         assert set(self.get_param_key()).issubset(set(self.params.keys())), (
-            "wrong parameter set\n"
-            + "given: {}\n".format(list(self.params.keys()))
-            + "required: {}".format(self.get_param_key())
-        )
+            "wrong parameter set\n" + f"given: {list(self.params.keys())}\n"
+        ) + f"required: {self.get_param_key()}"
         assert (
             self.chk_scale_param_key()
         ), "The hoping parameters and the exponent parameters are not consistent!"
@@ -38,9 +35,9 @@ class System(object):
         kpt_path = self.get_kpt_path(sp_kpts, kpt_den)
         kpts_len = self.get_kpt_len(kpt_path, self.structure.lattice.get_matrix())
         k_all_path = [kpt for kpt_path_seg in kpt_path for kpt in kpt_path_seg]
-        spl_pnts = []
-        for i in sp_kpts[0]:
-            spl_pnts.append(kpts_len[np.all(np.array(k_all_path).reshape(-1, 3) == i, axis=1)])
+        spl_pnts = [
+            kpts_len[np.all(np.array(k_all_path).reshape(-1, 3) == i, axis=1)] for i in sp_kpts[0]
+        ]
         return k_all_path, kpts_len, np.unique(np.concatenate(spl_pnts).ravel())
 
     def get_kpt_path(self, sp_kpts, kpt_den=30):
@@ -52,8 +49,7 @@ class System(object):
 		"""
         kpts = []
         for sp_kpt_path in sp_kpts:
-            kpts_path = []
-            kpts_path.append(sp_kpt_path[0])
+            kpts_path = [sp_kpt_path[0]]
             for kpt_ind, kpt in enumerate(sp_kpt_path):
                 if kpt_ind == len(sp_kpt_path) - 1:
                     break
@@ -70,9 +66,7 @@ class System(object):
         rec_lat_mat = np.linalg.inv(lat_mat).T
         kpts_path_cart = []
         for kpts in kpts_path:
-            kpts_cart = []
-            for kpt in kpts:
-                kpts_cart.append(np.dot(rec_lat_mat, kpt))
+            kpts_cart = [np.dot(rec_lat_mat, kpt) for kpt in kpts]
             kpts_path_cart.append(kpts_cart)
 
         kpts_path_len = []
@@ -86,9 +80,7 @@ class System(object):
             kpts_path_len.append(kpts_len)
         kpts_path_len = [kpt for kpt_path_seg in kpts_path_len for kpt in kpt_path_seg]
 
-        kpts_path_len = np.cumsum(kpts_path_len)
-
-        return kpts_path_len
+        return np.cumsum(kpts_path_len)
 
     def set_orbitals(self):
         for atom in self.structure.atoms:
@@ -97,15 +89,16 @@ class System(object):
     def get_all_orbitals(self):
         all_orbitals = []
         for atom in self.structure.atoms:
-            for orbit in atom.orbitals:
-                all_orbitals.append((atom.element, orbit))
+            all_orbitals.extend((atom.element, orbit) for orbit in atom.orbitals)
         return all_orbitals
 
     def get_all_iter(self):
         all_orbitals = []
         for atom_i, atom in enumerate(self.structure.atoms):
-            for orbit_i, orbit in enumerate(atom.orbitals):
-                all_orbitals.append((atom_i, orbit_i, atom.element, orbit))
+            all_orbitals.extend(
+                (atom_i, orbit_i, atom.element, orbit)
+                for orbit_i, orbit in enumerate(atom.orbitals)
+            )
         return all_orbitals
 
     def get_param_key(self):
@@ -131,8 +124,8 @@ class System(object):
             scale_params = self.scale_params[pair]
             if scale_params is None:
                 continue
-            hop_orbit = set([hop.replace("V_", "") for hop in self.params[pair] if "V_" in hop])
-            exp_orbit = set([hop.replace("n_", "") for hop in scale_params if "n_" in hop])
+            hop_orbit = {hop.replace("V_", "") for hop in self.params[pair] if "V_" in hop}
+            exp_orbit = {hop.replace("n_", "") for hop in scale_params if "n_" in hop}
 
             l_consist = l_consist and exp_orbit == hop_orbit
         return l_consist
@@ -154,17 +147,16 @@ class System(object):
         scale_params = self.scale_params[pair]
         if scale_params is None:
             return self.params[pair]
-        else:
-            d_0 = scale_params["d_0"]
-            d = self.structure.dist_mat[image_i, atom_1_i, atom_2_i]
-            factor = d_0 / float(d)
+        d_0 = scale_params["d_0"]
+        d = self.structure.dist_mat[image_i, atom_1_i, atom_2_i]
+        factor = d_0 / float(d)
 
-            params_scaled = dict()
-            hop_params = self.params[pair]
-            for key, hop in list(hop_params.items()):
-                orbit = key.replace("V_", "n_")
-                params_scaled[key] = hop * factor ** scale_params[orbit]
-            return params_scaled
+        params_scaled = {}
+        hop_params = self.params[pair]
+        for key, hop in list(hop_params.items()):
+            orbit = key.replace("V_", "n_")
+            params_scaled[key] = hop * factor ** scale_params[orbit]
+        return params_scaled
 
     def calc_volume(self, atom_i):
         """ calc volume of the tetrahedron 
@@ -176,7 +168,7 @@ class System(object):
         bond = bond_mat[:, atom_i, :]
 
         d_mat = dist_vec[bond]
-        assert len(d_mat) == 4, "tetrahedron required! # of bond = {}".format(len(d_mat))
+        assert len(d_mat) == 4, f"tetrahedron required! # of bond = {len(d_mat)}"
         a, b, c, d = d_mat
         vol = 1 / 6.0 * np.linalg.det([a - d, b - d, c - d])
         print(vol)
@@ -296,18 +288,15 @@ class System(object):
         atoms = self.structure.atoms
         params = self.params[atoms[atom_i].element]
 
-        if self.scale_params is None or (
-            not atoms[atom_i].element in self.scale_params
+        if (
+            self.scale_params is None
+            or atoms[atom_i].element not in self.scale_params
             or self.scale_params[atoms[atom_i].element] is None
         ):
             if "s" in atoms[atom_i].orbitals:
                 e_s = params["e_s"]
-            if bool(set(["px", "py", "pz"]) & (set(atoms[atom_i].orbitals))):
-                if not isinstance(params["e_p"], list):
-                    e_p = [params["e_p"]] * 3
-                else:
-                    e_p = params["e_p"]
-
+            if bool({"px", "py", "pz"} & (set(atoms[atom_i].orbitals))):
+                e_p = params["e_p"] if isinstance(params["e_p"], list) else [params["e_p"]] * 3
             #             if 'px' in  atoms[atom_i].orbitals:
             #                 e_p = params['e_p']
             #             if 'px' in  atoms[atom_i].orbitals:

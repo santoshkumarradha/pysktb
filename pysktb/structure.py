@@ -97,8 +97,7 @@ class Structure(object):
 
     def get_dist_matrix(self):
         dist_mat_vec = self.get_dist_matrix_vec()
-        dist_mat = np.linalg.norm(dist_mat_vec, axis=-1)
-        return dist_mat
+        return np.linalg.norm(dist_mat_vec, axis=-1)
 
     def get_dist_matrix_vec(self):
         def get_dist_vec(pos1, pos2, lat_vecs, l_min=False):
@@ -169,6 +168,5 @@ class Structure(object):
         dist_norm = np.linalg.norm(dist_vec, axis=-1)
         indx_zero = np.where(dist_norm == 0)
         dist_norm[indx_zero] = 1e-10
-        dir_cos = dist_vec / dist_norm[:, :, :, np.newaxis]
-        return dir_cos
+        return dist_vec / dist_norm[:, :, :, np.newaxis]
 
