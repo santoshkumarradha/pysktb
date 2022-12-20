@@ -44,16 +44,16 @@ from .lattice import Lattice
 from .structure import Structure
 
 
-def parallel_solove_eval(k, ham1, soc):
+def parallel_solove_eigen_val(k, ham1, soc):
     ham = ham1.get_ham(k, l_soc=soc)
-    eval = ham1._sol_ham(ham, eig_vectors=False)
-    return eval[:]
+    eigen_val = ham1._sol_ham(ham, eig_vectors=False)
+    return eigen_val[:]
 
 
-def parallel_solove_eval_and_evec(k, ham1, soc):
+def parallel_solove_eigen_val_and_evec(k, ham1, soc):
     ham = ham1.get_ham(k, l_soc=soc)
-    (eval, evec) = ham1._sol_ham(ham, eig_vectors=True)
-    return eval, evec
+    (eigen_val, evec) = ham1._sol_ham(ham, eig_vectors=True)
+    return eigen_val, evec
 
 
 class Hamiltonian(object):
@@ -63,10 +63,7 @@ class Hamiltonian(object):
 
         self.structure = structure
         self.inter = inter
-        t = {}
-        for i in self.structure.atoms:
-            t[i.element] = i.orbitals
-
+        t = {i.element: i.orbitals for i in self.structure.atoms}
         self.system = System(self.structure, t, self.inter)
         self.n_orbitals = len(self.system.all_orbitals)
         self.H_wo_g = np.zeros(
@@ -86,12 +83,12 @@ class Hamiltonian(object):
     def _orbital_order(self):
         """returns the orbital ordering in the hameltonian
 		"""
-        orbs = dict()
+        orbs = {}
         order = 0
         for i in self.system.all_orbitals:
-            orbs[order] = i[0] + "-" + i[1] + "-up"
+            orbs[order] = f"{i[0]}-{i[1]}-up"
             order += 1
-            orbs[order] = i[0] + "-" + i[1] + "-down"
+            orbs[order] = f"{i[0]}-{i[1]}-down"
             order += 1
         return orbs
 
@@ -101,30 +98,27 @@ class Hamiltonian(object):
         h = self.H_wo_g * g_mat
         h = np.sum(h, axis=0)
         if l_soc == True:
-            if scipy:
-                h = block_diag(*(2 * [h]))
-            else:
-                h = np.kron(h, np.eye(2)) + self.soc_mat
-
+            h = block_diag(*(2 * [h])) if scipy else np.kron(h, np.eye(2)) + self.soc_mat
         return h
 
     def _sol_ham(self, ham, eig_vectors=False, spin=False):
+        # sourcery skip: raise-specific-error
         ham_use = ham
         if np.max(ham_use - ham_use.T.conj()) > 1.0e-9:
             raise Exception("\n\nHamiltonian matrix is not hermitian?!")
         if eig_vectors == False:
             if scipy:
                 ham_use_scipy = sparse.csr_matrix(ham_use)
-                eval = eigh(ham_use_scipy, eig_vectors=False)
+                eigen_val = eigh(ham_use_scipy, eig_vectors=False)
             else:
-                eval = np.linalg.eigvalsh(ham_use)
-            eval = self.clean_eig(eval)
-            return np.array(eval, dtype=float)
+                eigen_val = np.linalg.eigvalsh(ham_use)
+            eigen_val = self.clean_eig(eigen_val)
+            return np.array(eigen_val, dtype=float)
         else:
-            (eval, eig) = np.linalg.eigh(ham_use)
+            (eigen_val, eig) = np.linalg.eigh(ham_use)
             eig = eig.T
-            (eval, eig) = self.clean_eig(eval, eig)
-            return eval, eig
+            (eigen_val, eig) = self.clean_eig(eigen_val, eig)
+            return eigen_val, eig
 
     def solve_kpath(self, k_list=None, eig_vectors=False, soc=True, parallel=1):
         """ solve along a give k path 
@@ -144,100 +138,90 @@ class Hamiltonian(object):
         # 	nkp = len(k_list)
         # 	ham_list = []
         # 	if soc == True:
-        # 		ret_eval = np.zeros((self.n_orbitals * 2, nkp), dtype=np.float64)
+        # 		ret_eigen_val = np.zeros((self.n_orbitals * 2, nkp), dtype=np.float64)
         # 		ret_evec = np.zeros(
         # 			(self.n_orbitals * 2, nkp, self.n_orbitals * 2), dtype=complex
         # 		)
         # 	else:
         # 		print(2)
-        # 		ret_eval = np.zeros((self.n_orbitals, nkp), dtype=np.float64)
+        # 		ret_eigen_val = np.zeros((self.n_orbitals, nkp), dtype=np.float64)
         # 		ret_evec = np.zeros((self.n_orbitals, nkp, self.n_orbitals), dtype=complex)
         # 	for i, k in enumerate(k_list):
         # 		ham = self.get_ham(k, l_soc=soc)
         # 		ham_list.append(ham)
-        # 		ret_eval, ret_evec = solve_ham_jit(
+        # 		ret_eigen_val, ret_evec = solve_ham_jit(
         # 			ham_list, eig_vectors, self.n_orbitals
         # 		)
         # 	if eig_vectors == False:
-        # 		# indices of eval are [band,kpoint]
-        # 		return ret_eval
+        # 		# indices of eigen_val are [band,kpoint]
+        # 		return ret_eigen_val
         # 	else:
-        # 		# indices of eval are [band,kpoint] for evec are [band,kpoint,orbital,(spin)]
-        # 		return (ret_eval, ret_evec)
-        if parallel == 1:
-            if not (k_list is None):
-                nkp = len(k_list)
-                ret_eval = np.zeros((self.n_orbitals * 2, nkp), dtype=np.float64)
+        # 		# indices of eigen_val are [band,kpoint] for evec are [band,kpoint,orbital,(spin)]
+        # 		return (ret_eigen_val, ret_evec)
+        if parallel == 1 and k_list is not None:
+            nkp = len(k_list)
+            ret_eigen_val = np.zeros((self.n_orbitals * 2, nkp), dtype=np.float64)
+            ret_evec = np.zeros((self.n_orbitals * 2, nkp, self.n_orbitals * 2), dtype=complex)
+            num_cores = multiprocessing.cpu_count()
+            if eig_vectors == False:
+                eigen_val = Parallel(n_jobs=num_cores)(
+                    delayed(parallel_solove_eigen_val)(i, self, soc) for i in k_list
+                )
+                for i, e in enumerate(eigen_val):
+                    ret_eigen_val[:, i] = e
+                # indices of eigen_val are [band,kpoint]
+                return ret_eigen_val
+            else:
+                (eigen_vals, evecs) = zip(
+                    *Parallel(n_jobs=num_cores)(
+                        delayed(parallel_solove_eigen_val_and_evec)(i, self, soc) for i in k_list
+                    )
+                )
+                for i in range(len(eigen_vals)):
+                    ret_eigen_val[:, i] = eigen_vals[i][:]
+                    ret_evec[:, i, :] = evecs[i][:, :]
+                # indices of eigen_val are [band,kpoint] for evec are [band,kpoint,orbital,(spin)]
+                return (ret_eigen_val, ret_evec)
+
+        if parallel == 0 and k_list is not None:
+            nkp = len(k_list)
+            if soc == True:
+                ret_eigen_val = np.zeros((self.n_orbitals * 2, nkp), dtype=float)
                 ret_evec = np.zeros((self.n_orbitals * 2, nkp, self.n_orbitals * 2), dtype=complex)
-                num_cores = multiprocessing.cpu_count()
+            else:
+                print(2)
+                ret_eigen_val = np.zeros((self.n_orbitals, nkp), dtype=float)
+                ret_evec = np.zeros((self.n_orbitals, nkp, self.n_orbitals), dtype=complex)
+            for i, k in enumerate(k_list):
+                ham = self.get_ham(k, l_soc=soc)
                 if eig_vectors == False:
-                    eval = Parallel(n_jobs=num_cores)(
-                        delayed(parallel_solove_eval)(i, self, soc) for i in k_list
-                    )
-                    for i, e in enumerate(eval):
-                        ret_eval[:, i] = e
-                    # indices of eval are [band,kpoint]
-                    return ret_eval
+                    eigen_val = self._sol_ham(ham, eig_vectors=eig_vectors)
+                    ret_eigen_val[:, i] = eigen_val[:]
                 else:
-                    (evals, evecs) = zip(
-                        *Parallel(n_jobs=num_cores)(
-                            delayed(parallel_solove_eval_and_evec)(i, self, soc) for i in k_list
-                        )
-                    )
-                    for i in range(len(evals)):
-                        ret_eval[:, i] = evals[i][:]
-                        ret_evec[:, i, :] = evecs[i][:, :]
-                    # indices of eval are [band,kpoint] for evec are [band,kpoint,orbital,(spin)]
-                    return (ret_eval, ret_evec)
-
-        if parallel == 0:
-            if not (k_list is None):
-
-                nkp = len(k_list)
-                if soc == True:
-                    ret_eval = np.zeros((self.n_orbitals * 2, nkp), dtype=float)
-                    ret_evec = np.zeros(
-                        (self.n_orbitals * 2, nkp, self.n_orbitals * 2), dtype=complex
-                    )
-                else:
-                    print(2)
-                    ret_eval = np.zeros((self.n_orbitals, nkp), dtype=float)
-                    ret_evec = np.zeros((self.n_orbitals, nkp, self.n_orbitals), dtype=complex)
-                for i, k in enumerate(k_list):
-                    ham = self.get_ham(k, l_soc=soc)
-                    if eig_vectors == False:
-                        eval = self._sol_ham(ham, eig_vectors=eig_vectors)
-                        ret_eval[:, i] = eval[:]
-                    else:
-                        (eval, evec) = self._sol_ham(ham, eig_vectors=eig_vectors)
-                        ret_eval[:, i] = eval[:]
-                        ret_evec[:, i, :] = evec[:, :]
-                if eig_vectors == False:
-                    # indices of eval are [band,kpoint]
-                    return ret_eval
-                else:
-                    # indices of eval are [band,kpoint] for evec are [band,kpoint,orbital,(spin)]
-                    return (ret_eval, ret_evec)
+                    (eigen_val, evec) = self._sol_ham(ham, eig_vectors=eig_vectors)
+                    ret_eigen_val[:, i] = eigen_val[:]
+                    ret_evec[:, i, :] = evec[:, :]
+            return ret_eigen_val if eig_vectors == False else (ret_eigen_val, ret_evec)
 
     def solve_k(self, k_point=None, eig_vectors=False):
-        if not (k_point is None):
+        if k_point is not None:
             if eig_vectors == False:
-                eval = self.solve_kpath([k_point], eig_vectors=eig_vectors)
-                # indices of eval are [band]
-                return eval[:, 0]
+                eigen_val = self.solve_kpath([k_point], eig_vectors=eig_vectors)
+                # indices of eigen_val are [band]
+                return eigen_val[:, 0]
             else:
-                (eval, evec) = self.solve_kpath([k_point], eig_vectors=eig_vectors)
-                # indices of eval are [band] for evec are [band,orbital,spin]
-                return (eval[:, 0], evec[:, 0, :])
+                (eigen_val, evec) = self.solve_kpath([k_point], eig_vectors=eig_vectors)
+                # indices of eigen_val are [band] for evec are [band,orbital,spin]
+                return (eigen_val[:, 0], evec[:, 0, :])
 
-    def clean_eig(self, eval, eig=None):
-        eval = np.array(eval.real, dtype=float)
-        args = eval.argsort()
-        eval = eval[args]
-        if not (eig is None):
+    def clean_eig(self, eigen_val, eig=None):
+        eigen_val = np.array(eigen_val.real, dtype=float)
+        args = eigen_val.argsort()
+        eigen_val = eigen_val[args]
+        if eig is not None:
             eig = eig[args]
-            return (eval, eig)
-        return eval
+            return (eigen_val, eig)
+        return eigen_val
 
     def get_dos(self, energy, eig=None, w=1e-2, nk=[20, 20, 20]):
         """
@@ -246,17 +230,16 @@ class Hamiltonian(object):
 		nk: k point sampling 1x3 for x,y,z directions
 		w: gaussian width
 		"""
-        if eig != None:
-            E = eig
-        else:
+        if eig is None:
             kx = np.linspace(0, 1, nk[0])
             ky = np.linspace(0, 1, nk[1])
             kz = np.linspace(0, 1, nk[2])
             E = []
             for i in kx:
                 for j in ky:
-                    for k in kz:
-                        E.append(self.solve_k([i, j, k]))
+                    E.extend(self.solve_k([i, j, k]) for k in kz)
+        else:
+            E = eig
         D = 0
         for i in np.array(E).flatten():
             D = D + np.exp(-((energy - i) ** 2) / (2 * w ** 2)) / (np.pi * w * np.sqrt(2))
@@ -328,19 +311,19 @@ class Hamiltonian(object):
             deepcopy(self), filled_band=filled_band, nk=nk, dim=dim, soc=soc
         )
 
-    def plot_kproj(self, evals, vecs, k_dist, index, ax=None, cmap="bwr"):
+    def plot_kproj(self, eigen_vals, vecs, k_dist, index, ax=None, cmap="bwr"):
         """ plots band structure projected on to subbands
 		vecs: eigenvecs in format [band*2,kpoint,orbital] (bands*2 for spins)
-		evals: eigen values
+		eigen_vals: eigen values
 		k_dist: distance between k points
 		index: orbital index to plot the projection on
 		ax: axis object to plot it on
 		cmap: colormap value
 		
 		example :
-		evals,vecs=ham.solve_kpath(k_path, eig_vectors=True)
+		eigen_vals,vecs=ham.solve_kpath(k_path, eig_vectors=True)
 		fig,ax=plt.subplots()
-		ham.plot_kproj(evals,vecs,k_dist,index=[0,1],ax=ax)
+		ham.plot_kproj(eigen_vals,vecs,k_dist,index=[0,1],ax=ax)
 		
 		"""
         index_nums = index
@@ -413,12 +396,12 @@ class Hamiltonian(object):
         x = k_dist
         for i in range(vecs.shape[0]):
 
-            y = evals[i]
+            y = eigen_vals[i]
 
             colorline(x, y, z=colors[i], alpha=1)
 
         ax.set_xlim(x.min(), x.max())
-        ax.set_ylim(evals.min(), evals.max())
+        ax.set_ylim(eigen_vals.min(), eigen_vals.max())
         ax.axhline(0, c="k", linestyle=":", linewidth=1)
         # ax.axvline(0.5,c="k",linestyle=":",linewidth=1)
         return ax
