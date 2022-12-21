@@ -32,8 +32,8 @@ class Lattice:
         return norm(a), norm(b), norm(c), alpha, beta, gamma
 
     def get_matrix(self):
-        matrix = self._to_matrix()
-        return matrix
+        """return lattice matrix"""
+        return self._to_matrix()
 
     def _to_matrix(self):
         # see http://en.wikipedia.org/wiki/Fractional_coordinates
@@ -78,8 +78,7 @@ class Lattice:
 		b_i = (a_j x a_k)/ a_i . (a_j x a_k)
 		"""
         lat_mat = self.matrix
-        rec_lat_mat = np.linalg.inv(lat_mat).T
-        return rec_lat_mat
+        return np.linalg.inv(lat_mat).T
 
     def __repr__(self):
         _repr = [self.a, self.b, self.c, self.alpha, self.beta, self.gamma]

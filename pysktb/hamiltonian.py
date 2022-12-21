@@ -57,6 +57,8 @@ def parallel_solove_eigen_val_and_evec(k, ham1, soc):
 
 
 class Hamiltonian(object):
+    """Object to represent hamiltonian of a system """
+
     E_PREFIX = "e_"
 
     def __init__(self, structure, inter, numba=1):
@@ -78,6 +80,7 @@ class Hamiltonian(object):
 
     @staticmethod
     def get_orb_ind(orbit):
+        """returns the orbital index in the hameltonian"""
         return Atom.ORBITALS_ALL.index(orbit)
 
     def _orbital_order(self):
@@ -93,6 +96,7 @@ class Hamiltonian(object):
         return orbs
 
     def get_ham(self, kpt, l_soc=True):
+        """returns the hamiltonian for a given k point"""
         g_mat = self.calc_g(kpt)
         self.g_mat = g_mat
         h = self.H_wo_g * g_mat
@@ -102,6 +106,7 @@ class Hamiltonian(object):
         return h
 
     def _sol_ham(self, ham, eig_vectors=False, spin=False):
+        """solves the hamiltonian and returns the eigen values and eigen vectors"""
         # sourcery skip: raise-specific-error
         ham_use = ham
         if np.max(ham_use - ham_use.T.conj()) > 1.0e-9:
@@ -204,6 +209,7 @@ class Hamiltonian(object):
             return ret_eigen_val if eig_vectors == False else (ret_eigen_val, ret_evec)
 
     def solve_k(self, k_point=None, eig_vectors=False):
+        """solve the hamiltonian at a single k point"""
         if k_point is not None:
             if eig_vectors == False:
                 eigen_val = self.solve_kpath([k_point], eig_vectors=eig_vectors)
@@ -215,6 +221,7 @@ class Hamiltonian(object):
                 return (eigen_val[:, 0], evec[:, 0, :])
 
     def clean_eig(self, eigen_val, eig=None):
+        """clean the eigen values and eigenvectors"""
         eigen_val = np.array(eigen_val.real, dtype=float)
         args = eigen_val.argsort()
         eigen_val = eigen_val[args]
@@ -246,9 +253,11 @@ class Hamiltonian(object):
         return D
 
     def get_kpts(self, path, nk):
+        """get k points along a path"""
         return self.system.get_kpts(path, nk)
 
     def k_cart2red(self, k):
+        """convert k point from cartesian to reduced coordinates"""
         red2cart = np.array(
             [self.structure.get_lattice()[i][: len(k)] for i in range(len(k))]
         ).transpose()
@@ -256,6 +265,7 @@ class Hamiltonian(object):
         return cart2red @ np.array(k)
 
     def k_red2cart(self, k):
+        """convert k point from reduced to cartesian coordinates"""
         red2cart = np.array(
             [self.structure.get_lattice()[i][: len(k)] for i in range(len(k))]
         ).transpose()
@@ -307,6 +317,7 @@ class Hamiltonian(object):
         return g_mat
 
     def total_energy(self, filled_band=0, nk=10, dim=3, soc=True):
+        """get total energy of the system"""
         return energitics.get_totalenergy(
             deepcopy(self), filled_band=filled_band, nk=nk, dim=dim, soc=soc
         )
