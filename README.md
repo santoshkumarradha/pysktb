@@ -11,9 +11,10 @@
 
 <p align="center">Scientific Python package for solving Slater Koster tight-binding hamiltonian. A python package in development for creating and solving slater koster tight-binding hamiltonians for various 1D 2D and 3D systems from topological insulators to strong correlations.</p>
 
-                        
-[![DOI](https://zenodo.org/badge/255115236.svg)](https://zenodo.org/badge/latestdoi/255115236)
 
+## Documentation
+
+Documentation can be found at [https://pysktb.readthedocs.io](https://pysktb.readthedocs.io/en/latest/)
 
 ## Features
 
