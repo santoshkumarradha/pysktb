@@ -11,7 +11,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath("../../"))
 
-project = "Pysktb"
+project = "PySKTB"
 copyright = "2022, Santosh Kumar Radha"
 author = "Santosh Kumar Radha"
 
@@ -40,11 +40,11 @@ exclude_patterns = []
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "sphinx_wagtail_theme"
-project = "Pysktb"
+project = "PySKTB"
 html_theme_options = dict(
     project_name=project,
     logo="logo.png",
-    logo_alt="Pysktb",
+    logo_alt="PySKTB",
     logo_height=70,
     logo_url="/",
     logo_width=45,
