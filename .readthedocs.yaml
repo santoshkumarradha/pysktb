@@ -25,5 +25,11 @@ sphinx:
 
 # Optionally declare the Python requirements required to build your docs
 python:
+  version: 3.8
   install:
     - requirements: docs/requirements-doc.txt
+    - requirements: requirements.txt
+    - method: pip
+      path: .
+    - method: pip
+      path: .
