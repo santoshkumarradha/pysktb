@@ -322,7 +322,8 @@ class Hamiltonian(object):
             deepcopy(self), filled_band=filled_band, nk=nk, dim=dim, soc=soc
         )
 
-    def plot_kproj(self, eigen_vals, vecs, k_dist, index, ax=None, cmap="bwr"):
+    @staticmethod
+    def plot_kproj(eigen_vals, vecs, k_dist, index, ax=None, cmap="bwr"):
         """ plots band structure projected on to subbands
 		vecs: eigenvecs in format [band*2,kpoint,orbital] (bands*2 for spins)
 		eigen_vals: eigen values
@@ -337,6 +338,10 @@ class Hamiltonian(object):
 		ham.plot_kproj(eigen_vals,vecs,k_dist,index=[0,1],ax=ax)
 		
 		"""
+        if ax is None:
+            import matplotlib.pyplot as plt
+
+            fig, ax = plt.subplots()
         index_nums = index
         colors = []
         for j in range(vecs.shape[0]):
