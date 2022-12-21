@@ -4,3 +4,4 @@ autodocsumm
 nbsphinx
 sphinx-wagtail-theme
 sphinx-copybutton
+ipython
