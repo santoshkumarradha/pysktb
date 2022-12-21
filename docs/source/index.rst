@@ -66,27 +66,6 @@ Why use PySKTB ❔
 
 
 
-
-
-:mod:`pysktb`'s primitives
---------------------------
-
-.. automodule:: pysktb
-    :no-members:
-    :no-inherited-members:
-
-.. currentmodule:: pysktb
-
-.. autosummary::
-   :template: class.rst
-
-   pysktb.Atom
-   pysktb.Lattice
-   pysktb.Structure
-   pysktb.Hamiltonian
-   pysktb.System
-
-
 .. toctree::
    :maxdepth: 2
    :caption: Overview:
