@@ -1,6 +1,7 @@
 # Always prefer setuptools over distutils
 from setuptools import setup, find_packages
 import pathlib
+from pysktb import __version__
 
 here = pathlib.Path(__file__).parent.resolve()
 
@@ -12,7 +13,7 @@ with open("requirements.txt") as f:
 
 setup(
     name="pysktb",
-    version="0.5.1",
+    version=__version__,
     description="Scientific Python package for solving Slater Koster tight-binding topological hamiltonian",
     long_description=long_description,
     long_description_content_type="text/markdown",
