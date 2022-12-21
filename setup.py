@@ -1,19 +1,33 @@
 # Always prefer setuptools over distutils
 from setuptools import setup, find_packages
 import pathlib
-from pysktb import __version__
+import re
+
+
+def get_version(init_path):
+    import re
+
+    VERSIONFILE = init_path
+    verstrline = open(VERSIONFILE, "rt").read()
+    VSRE = r"^__version__ = ['\"]([^'\"]*)['\"]"
+    if mo := re.search(VSRE, verstrline, re.M):
+        verstr = mo[1]
+    else:
+        raise RuntimeError(f"Unable to find version string in {VERSIONFILE}.")
+    return verstr
+
 
 here = pathlib.Path(__file__).parent.resolve()
-
-# Get the long description from the README file
+project_name = "pysktb"
 long_description = (here / "README.md").read_text(encoding="utf-8")
 
 with open("requirements.txt") as f:
     required = f.read().splitlines()
 
+
 setup(
-    name="pysktb",
-    version=__version__,
+    name=project_name,
+    version=get_version(f"{project_name}/__init__.py"),
     description="Scientific Python package for solving Slater Koster tight-binding topological hamiltonian",
     long_description=long_description,
     long_description_content_type="text/markdown",
