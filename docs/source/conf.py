@@ -9,6 +9,8 @@
 import os
 import sys
 
+sys.path.append(os.path.abspath("../../"))
+
 project = "PySKTB"
 copyright = "2022, Santosh Kumar Radha"
 author = "Santosh Kumar Radha"
@@ -49,3 +51,6 @@ html_theme_options = dict(
     github_url="https://github.com/santoshkumarradha/pysktb",
 )
 html_static_path = ["_static"]
+exclude_patterns = ["_build", "**.ipynb_checkpoints"]
+nbsphinx_execute = "never"
+highlight_language = "python"
