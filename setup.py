@@ -10,7 +10,8 @@ def get_version(init_path):
     VERSIONFILE = init_path
     verstrline = open(VERSIONFILE, "rt").read()
     VSRE = r"^__version__ = ['\"]([^'\"]*)['\"]"
-    if mo := re.search(VSRE, verstrline, re.M):
+    mo = re.search(VSRE, verstrline, re.M)
+    if mo:
         verstr = mo[1]
     else:
         raise RuntimeError(f"Unable to find version string in {VERSIONFILE}.")
