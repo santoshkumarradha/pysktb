@@ -31,6 +31,7 @@ class System(object):
         ), "The hoping parameters and the exponent parameters are not consistent!"
 
     def get_kpts(self, sp_kpts, kpt_den):
+        """ return kpts, kpts_len, spl_pnts"""
         sp_kpts = [sp_kpts]
         kpt_path = self.get_kpt_path(sp_kpts, kpt_den)
         kpts_len = self.get_kpt_len(kpt_path, self.structure.lattice.get_matrix())
@@ -63,6 +64,7 @@ class System(object):
         return kpts
 
     def get_kpt_len(self, kpts_path, lat_mat):
+        """ return kpts_len"""
         rec_lat_mat = np.linalg.inv(lat_mat).T
         kpts_path_cart = []
         for kpts in kpts_path:
@@ -83,16 +85,19 @@ class System(object):
         return np.cumsum(kpts_path_len)
 
     def set_orbitals(self):
+        """ set orbitals for each atom"""
         for atom in self.structure.atoms:
             atom.set_orbitals(self.orbitals[atom.element])
 
     def get_all_orbitals(self):
+        """ return all orbitals"""
         all_orbitals = []
         for atom in self.structure.atoms:
             all_orbitals.extend((atom.element, orbit) for orbit in atom.orbitals)
         return all_orbitals
 
     def get_all_iter(self):
+        """ return all orbitals"""
         all_orbitals = []
         for atom_i, atom in enumerate(self.structure.atoms):
             all_orbitals.extend(
@@ -102,6 +107,7 @@ class System(object):
         return all_orbitals
 
     def get_param_key(self):
+        """ return all possible keys for hopping parameters"""
         elements = self.structure.get_elements()
         key_list = []
         key_list += elements
@@ -110,6 +116,7 @@ class System(object):
         return key_list
 
     def chk_scale_param_key(self):
+        """ check if the exponent parameters are consistent with the hopping parameters"""
         if self.scale_params is None:
             return True
 
@@ -407,6 +414,7 @@ class System(object):
             return onsite_term
 
     def _get_soc_mat_i(self, atom_i):
+
         # only for p_orbitals and need to specify all px py and pz
         # sigh got to improve on that
         atom = self.structure.atoms[atom_i]
@@ -463,6 +471,7 @@ class System(object):
             return h_soc
 
     def get_soc_mat(self):
+        """get the spin-orbit coupling matrix"""
 
         soc_i_list = []
         for atom_i in range(len(self.structure.atoms)):

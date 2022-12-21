@@ -5,6 +5,8 @@ from .atom import Atom
 
 
 class Structure(object):
+    """Object to represent structure of system"""
+
     def __init__(self, lattice, atoms, periodicity=None, name=None, bond_cut=None, numba=True):
         assert isinstance(lattice, Lattice), "not Lattice object"
         assert isinstance(atoms, list), "atoms is not list"
@@ -54,6 +56,8 @@ class Structure(object):
         return final
 
     def get_bond_mat(self):
+        """return bond matrix"""
+
         def get_cutoff(atom_1, atom_2):
             ele_1 = atom_1.element
             ele_2 = atom_2.element
@@ -90,16 +94,21 @@ class Structure(object):
         return bond_mat * bond_mat_2
 
     def get_lattice(self):
+        """return lattice object"""
         return self.lattice.get_matrix()
 
     def get_pos(self):
+        """return position of atoms"""
         return np.concatenate([i.pos for i in self.atoms]).ravel()
 
     def get_dist_matrix(self):
+        """return distance matrix"""
         dist_mat_vec = self.get_dist_matrix_vec()
         return np.linalg.norm(dist_mat_vec, axis=-1)
 
     def get_dist_matrix_vec(self):
+        """return distance matrix vector"""
+
         def get_dist_vec(pos1, pos2, lat_vecs, l_min=False):
             """ # p1, p2 direct 
 				# return angstrom
@@ -141,6 +150,7 @@ class Structure(object):
 
     @staticmethod
     def read_poscar(file_name="./POSCAR", kwargs={}):
+        """read POSCAR file and return Structure object (NOT SUPPORTED YET)"""
         # TODO: add support for POSCAR Files
         raise NotImplementedError
         lat_const, lattice_mat, atom_set_direct, dynamics = readPOSCAR(fileName=file_name)
@@ -164,6 +174,7 @@ class Structure(object):
             return dist_vec / np.linalg.norm(dist_vec)
 
     def get_dir_cos_all(self):
+        """return directional cos of distance vector"""
         dist_vec = self.dist_mat_vec
         dist_norm = np.linalg.norm(dist_vec, axis=-1)
         indx_zero = np.where(dist_norm == 0)
