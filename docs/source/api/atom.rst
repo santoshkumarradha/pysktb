@@ -1,6 +1,6 @@
 Atom
 ----
 
-.. autoclass:: pysktb.atom.Atom
+.. autoclass:: pysktb.Atom
    :members:
    :undoc-members:
