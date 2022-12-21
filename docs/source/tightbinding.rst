@@ -2,13 +2,27 @@
 Tight-Binding Models
 =====================
 
+.. .. image:: _static/tb.png
+..     :align: right
+..     :width: 200px
 
-Tight binding models are a type of model used to describe the electronic structure of solids and molecules. In tight binding models, the electronic wave functions are expanded in terms of a set of localized basis functions, which are usually chosen to be atomic orbitals. The expansion coefficients, or tight-binding parameters, are then determined by fitting to experimental data or by performing first-principles calculations.
 
-The tight binding model can then be used to calculate various properties of the electronic structure, such as the band structure, density of states, and electrical conductivity. Tight binding models are particularly useful for quickly and accurately calculating the electronic structure of materials, particularly when only the nearest-neighbor interactions are important.
+.. raw :: html
 
-There are several different approaches to constructing tight binding models, including the Slater-Koster approach, which includes only the nearest-neighbor interactions between atoms, and the extended tight binding approach, which includes longer-range interactions as well.
+    <div style="width:100%;">
+     <div style="float:left;width:30%"> <img src='_static/tb.png' style="border-radius: 14px" width='200px'></img> </div>
+        <div style="float:none;"> 
+        <p>
+        Tight binding models are a type of model used to describe the electronic structure of solids and molecules. In tight binding models, the electronic wave functions are expanded in terms of a set of localized basis functions, which are usually chosen to be atomic orbitals. The expansion coefficients, or tight-binding parameters, are then determined by fitting to experimental data or by performing first-principles calculations.</p>
+        <p>
 
+        The tight binding model can then be used to calculate various properties of the electronic structure, such as the band structure, density of states, and electrical conductivity. Tight binding models are particularly useful for quickly and accurately calculating the electronic structure of materials, particularly when only the nearest-neighbor interactions are important.
+        </p>
+        <p>        
+        There are several different approaches to constructing tight binding models, including the Slater-Koster approach, which includes only the nearest-neighbor interactions between atoms, and the extended tight binding approach, which includes longer-range interactions as well.
+        </p>
+        </div>
+    </div>
 
 Slater-Koster Tight Binding
 ---------------------------

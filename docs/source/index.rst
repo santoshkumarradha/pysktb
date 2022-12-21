@@ -3,29 +3,50 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+.. _pysktb:
+
 Welcome to PySKTB!
 ========================
+
+PySKTB (Python Slater Koster Tight Binding), is a python package for Slater-Koster tight binding calculations. pysktb provides tools for constructing and solving tight binding models, as well as for calculating various properties of the resulting electronic structure.
+
+.. code-block:: python
+
+   import pysktb
+
+   # Define structure
+   structure = pysktb.Structure( 
+      lattice=pysktb.Lattice([[1, 0, 0], [0, 10, 0], [0, 0, 10]], 1), #Lattice
+      atoms=[pysktb.Atom("Si", [0, 0, 0], orbitals=["s", "px"])], #s-px orbital
+      bond_cut={"SiSi": {"NN": 1.2}}, #NN cuttoff
+   )
+
+   # Construct Hamiltonian
+   hamiltonian = pysktb.Hamiltonian(
+      structure=structure,
+      inter={"Si": {"e_p": 0, "e_s": 0},  #SK Interactions
+             "SiSi": {"V_sss": -0.2, "V_sps": -0.05, "V_pps": 0.2}})
+
+   #Solve along k-path
+   path = [[0.5, 0.0, 0.0], [0.0, 0.0, 0.0], [-0.5, 0.0, -0.0]]
+   k_path, k_dist, k_pts = hamiltonian.get_kpts(path, 40) #Get k-path
+   evals, vecs = hamiltonian.solve_kpath(k_path, eig_vectors=True) #Solve for eigenvalues and eigenvectors
+
+   #Plot band structure
+   pysktb.Hamiltonian.plot_kproj(evals, vecs, k_dist, index=[0, 1])
+
+*Results in*
 
 .. raw:: html
 
    <div align='center'>
    <a href="https://en.wikipedia.org/wiki/Graphene_nanoribbon">
    <figure>
-   <img width="500" src="./_static/graphene-Edge-states.png" alt="Edge states of graphene in both zigzag and armchair directions" style="border-radius: 14px"></a>
-   <figcaption><i>Edge states of graphene in both zigzag and armchair directions.</i></figcaption>
+   <img width="250" src="./_static/sp-chain-proj.png" alt="sp-chain" style="border-radius: 14px"></a>
+   <figcaption><i>Orbital weighted band structure for a chain of s-p orbitals in 1D chain</i></figcaption>
    </figure>
    </div>
 
-
-.. figure::: examples/data/graphene-Edge-states.png
-   :target: examples/examples
-   :align: center
-   :alt: graphene-Edge-states
-   :width: 240px
-
-   Edge states of graphene in both zigzag and armchair directions
-
-PySKTB (Python Slater Koster Tight Binding), is a python package for Slater-Koster tight binding calculations. pysktb provides tools for constructing and solving tight binding models, as well as for calculating various properties of the resulting electronic structure.
 
 
 Why use PySKTB ❔
@@ -88,9 +109,10 @@ Why use PySKTB ❔
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Overview:
 
+   Home <self>
    Installation <install>
    What are Tight Binding models? <tightbinding>
 
