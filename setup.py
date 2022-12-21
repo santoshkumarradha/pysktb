@@ -7,6 +7,9 @@ here = pathlib.Path(__file__).parent.resolve()
 # Get the long description from the README file
 long_description = (here / "README.md").read_text(encoding="utf-8")
 
+with open("requirements.txt") as f:
+    required = f.read().splitlines()
+
 setup(
     name="pysktb",
     version="0.5.1",
@@ -31,12 +34,5 @@ setup(
     package_dir={"": "pysktb"},
     packages=find_packages(where="pysktb"),
     python_requires=">=3.6, <4",
-    install_requires=[
-        "joblib==0.14.1",
-        "numba>=0.49.0",
-        "pymatgen>=2020.4.29",
-        "numpy>=1.18.3",
-        "matplotlib>=3.1.3",
-        "scipy>=1.2.1",
-    ],
+    install_requires=required,
 )
