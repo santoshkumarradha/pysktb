@@ -7,6 +7,7 @@ import sys
 from shutil import rmtree
 
 from setuptools import find_packages, setup, Command
+import os
 
 # Package meta-data.
 NAME = "pysktb"
@@ -24,6 +25,13 @@ with open("requirements.txt") as f:
 
 
 here = os.path.abspath(os.path.dirname(__file__))
+
+
+def package_files(directory):
+    paths = []
+    for (path, directories, filenames) in os.walk(directory):
+        paths.extend(os.path.join("..", path, filename) for filename in filenames)
+    return paths
 
 
 try:
@@ -89,7 +97,7 @@ setup(
     author_email=EMAIL,
     python_requires=REQUIRES_PYTHON,
     url=URL,
-    packages=find_packages(exclude=["tests", "*.tests", "*.tests.*", "tests.*"]),
+    packages=find_packages(),
     install_requires=REQUIRED,
     include_package_data=True,
     license="MIT",
