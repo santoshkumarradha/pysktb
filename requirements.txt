@@ -1,4 +1,4 @@
-joblib==0.14.1
+joblib==1.2.0
 numba>=0.49.0
 pymatgen>=2020.4.29
 numpy>=1.18.3
