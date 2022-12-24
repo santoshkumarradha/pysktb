@@ -47,8 +47,8 @@ setup(
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3 :: Only",
     ],
-    package_dir={"": "pysktb"},
-    packages=find_packages(where="pysktb"),
+    py_modules=["pysktb"],
     python_requires=">=3.6, <4",
     install_requires=required,
+    include_package_data=True,
 )
