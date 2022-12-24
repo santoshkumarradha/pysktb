@@ -4,7 +4,7 @@ from .lattice import Lattice
 from .system import System
 from .hamiltonian import Hamiltonian
 
-__version__ = "0.5.3"
+__version__ = "0.5.4"
 
 
 __all__ = ["Structure", "Atom", "Lattice", "System", "Hamiltonian"]
