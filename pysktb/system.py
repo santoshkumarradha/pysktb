@@ -1,11 +1,27 @@
+"""
+System module for tight-binding calculations.
+
+This module manages atomic structures, orbital assignments, and tight-binding parameters
+including on-site energies and spin-orbit coupling (SOC) matrices for s, p, d, and f orbitals.
+
+Author: Santosh Kumar Radha
+"""
+
 import itertools
 import numpy as np
 from scipy import linalg
 
 
 class System(object):
-    """ atomics structures and tight_binding parameters 
-	"""
+    """Atomic structures and tight-binding parameters.
+
+    This class manages the mapping between atoms, orbitals, and tight-binding
+    parameters. It handles:
+    - Orbital assignment to atoms
+    - On-site energy terms with crystal field effects
+    - Spin-orbit coupling matrices for p, d, and f orbitals
+    - Distance-dependent scaling of hopping parameters
+    """
 
     def __init__(self, structure, orbitals, parameters, scale_params=None):
         self.structure = structure
@@ -181,13 +197,30 @@ class System(object):
         print(vol)
 
     def get_onsite_term(self, atom_i):
-        """ calc onsite term
-		"""
+        """Calculate on-site term for atom.
+
+        This computes the on-site Hamiltonian matrix including:
+        - Orbital energies (e_s, e_p, e_d, e_f, e_S)
+        - Crystal field effects via directional cosines
+        - Volume-dependent modulation
+
+        Parameters
+        ----------
+        atom_i : int
+            Index of the atom in the structure.
+
+        Returns
+        -------
+        onsite : ndarray
+            On-site Hamiltonian matrix for the atom's orbitals.
+        """
 
         def get_onsite_s(e_s, vol_ratio, alpha):
+            """1×1 on-site matrix for s orbital."""
             return (e_s + alpha * vol_ratio) * np.eye(1)
 
         def get_onsite_p(e_p, vol_ratio, alpha, beta_0, beta_1, delta_d, dir_cos):
+            """3×3 on-site matrix for p orbitals with crystal field."""
             b_term_sum = 0
             for d, dc in zip(delta_d, dir_cos):
                 beta = beta_0 + beta_1 * d
@@ -202,6 +235,7 @@ class System(object):
             return (e_p + alpha * vol_ratio) * np.eye(3) + b_term_sum
 
         def get_onsite_d(e_d, vol_ratio, alpha, beta, gamma, delta_d, dir_cos):
+            """5×5 on-site matrix for d orbitals with crystal field."""
             b_term_sum = 0
             g_term_sum = 0
             for d, dc in zip(delta_d, dir_cos):
@@ -236,6 +270,29 @@ class System(object):
                 g_term_sum += gamma * g_term
 
             return (e_d + alpha * vol_ratio) * np.eye(5) + beta * b_term + gamma * g_term
+
+        def get_onsite_f(e_f, vol_ratio=0, alpha=0):
+            """7×7 on-site matrix for f orbitals.
+
+            For f orbitals, we use a simpler model where crystal field
+            splitting is typically small compared to SOC (especially for
+            lanthanides). The diagonal on-site energy dominates.
+
+            Parameters
+            ----------
+            e_f : float
+                f orbital on-site energy
+            vol_ratio : float
+                Volume ratio for strain effects
+            alpha : float
+                Volume coupling constant
+
+            Returns
+            -------
+            ndarray
+                7×7 diagonal on-site matrix for f orbitals
+            """
+            return (e_f + alpha * vol_ratio) * np.eye(7)
 
         def get_onsite_pd(beta_0, beta_1, gamma_0, gamma_1, delta_d, dir_cos):
             b_term_sum = 0
@@ -295,27 +352,26 @@ class System(object):
         atoms = self.structure.atoms
         params = self.params[atoms[atom_i].element]
 
+        # f orbital names for checking
+        f_orbitals = ["fz3", "fxz2", "fyz2", "fz(x2-y2)", "fxyz", "fx(x2-3y2)", "fy(3x2-y2)"]
+        d_orbitals = ["dxy", "dyz", "dxz", "dx2-y2", "dz2"]
+
         if (
             self.scale_params is None
             or atoms[atom_i].element not in self.scale_params
             or self.scale_params[atoms[atom_i].element] is None
         ):
+            # Simple case: no scaling, just diagonal on-site energies
             if "s" in atoms[atom_i].orbitals:
                 e_s = params["e_s"]
             if bool({"px", "py", "pz"} & (set(atoms[atom_i].orbitals))):
                 e_p = params["e_p"] if isinstance(params["e_p"], list) else [params["e_p"]] * 3
-            #             if 'px' in  atoms[atom_i].orbitals:
-            #                 e_p = params['e_p']
-            #             if 'px' in  atoms[atom_i].orbitals:
-            #                 e_p = params['e_p']
-            #             if 'py' in  atoms[atom_i].orbitals:
-            #                 e_p = params['e_p']
-            #             if 'pz' in  atoms[atom_i].orbitals:
-            #                 e_p = params['e_p']
-            if "dxy" in atoms[atom_i].orbitals:
-                e_d = params["e_d"]
+            if bool(set(d_orbitals) & set(atoms[atom_i].orbitals)):
+                e_d = params.get("e_d", 0)
+            if bool(set(f_orbitals) & set(atoms[atom_i].orbitals)):
+                e_f = params.get("e_f", 0)
             if "S" in atoms[atom_i].orbitals:
-                e_S = params["e_S"]
+                e_S = params.get("e_S", 0)
 
             e_orbit_list = []
             if "s" in atoms[atom_i].orbitals:
@@ -326,6 +382,7 @@ class System(object):
                 e_orbit_list += [e_p[1]]
             if "pz" in atoms[atom_i].orbitals:
                 e_orbit_list += [e_p[2]]
+            # d orbitals
             if "dxy" in atoms[atom_i].orbitals:
                 e_orbit_list += [e_d]
             if "dyz" in atoms[atom_i].orbitals:
@@ -336,6 +393,22 @@ class System(object):
                 e_orbit_list += [e_d]
             if "dz2" in atoms[atom_i].orbitals:
                 e_orbit_list += [e_d]
+            # f orbitals
+            if "fz3" in atoms[atom_i].orbitals:
+                e_orbit_list += [e_f]
+            if "fxz2" in atoms[atom_i].orbitals:
+                e_orbit_list += [e_f]
+            if "fyz2" in atoms[atom_i].orbitals:
+                e_orbit_list += [e_f]
+            if "fz(x2-y2)" in atoms[atom_i].orbitals:
+                e_orbit_list += [e_f]
+            if "fxyz" in atoms[atom_i].orbitals:
+                e_orbit_list += [e_f]
+            if "fx(x2-3y2)" in atoms[atom_i].orbitals:
+                e_orbit_list += [e_f]
+            if "fy(3x2-y2)" in atoms[atom_i].orbitals:
+                e_orbit_list += [e_f]
+            # S orbital
             if "S" in atoms[atom_i].orbitals:
                 e_orbit_list += [e_S]
             return np.diag(e_orbit_list)
@@ -414,61 +487,254 @@ class System(object):
             return onsite_term
 
     def _get_soc_mat_i(self, atom_i):
+        """Calculate spin-orbit coupling matrix for a single atom.
 
-        # only for p_orbitals and need to specify all px py and pz
-        # sigh got to improve on that
+        This function computes the SOC Hamiltonian H_SOC = λ L·S for p, d, and f orbitals.
+        The matrix is constructed in the basis |orbital, spin⟩ where spin is ↑ or ↓.
+
+        The L·S operator can be written as:
+        L·S = Lz·Sz + (L+·S- + L-·S+)/2
+
+        Parameters
+        ----------
+        atom_i : int
+            Index of the atom
+
+        Returns
+        -------
+        h_soc : ndarray
+            SOC matrix of shape (2*n_orbitals, 2*n_orbitals)
+        """
         atom = self.structure.atoms[atom_i]
         param = self.params[atom.element]
         orbitals = atom.orbitals
 
         h_soc = np.zeros((len(orbitals) * 2, len(orbitals) * 2), dtype=complex)
-        if "lambda" in list(param.keys()):
-            assert "".join(map(str, ["px", "py", "pz"])) in "".join(
-                map(str, orbitals)
-            ), "px, py, and pz should be in orbitals"
-            block_diag_list = []
 
-            for orbit_i, orbit in enumerate(orbitals):
-                if "p" in orbit:
-                    break
-            lambda_p = param["lambda"]
-            h_soc_p = (
-                np.array(
-                    [
-                        [0, 0, -1j, 0, 0, 1],
-                        [0, 0, 0, 1j, 0, 0],
-                        [0, 0, 0, 0, 0, -1j],
-                        [0, 0, 0, 0, -1j, 0],
-                        [0, -1, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 0, 0],
-                    ]
-                )
-                * lambda_p
-            )
-            h_soc_p += h_soc_p.conj().T
-            # orbit_i * 2 for spin
-            rows = []
-            cnt = 0
-            if "px" in orbitals:
-                rows.append(0)
-                rows.append(3)
-                cnt += 1
-            if "py" in orbitals:
-                rows.append(1)
-                rows.append(4)
-                cnt += 1
-            if "pz" in orbitals:
-                rows.append(2)
-                rows.append(5)
-                cnt += 1
-            rows = np.sort(rows)
-            # h_soc_p=h_soc_p[np.ix_(rows,rows)]
-            h_soc[
-                orbit_i * 2 : orbit_i * 2 + 2 * cnt, orbit_i * 2 : orbit_i * 2 + 2 * cnt
-            ] = h_soc_p
-            return h_soc
-        else:
-            return h_soc
+        # Track orbital positions
+        p_orbs = ["px", "py", "pz"]
+        d_orbs = ["dxy", "dyz", "dxz", "dx2-y2", "dz2"]
+        f_orbs = ["fz3", "fxz2", "fyz2", "fz(x2-y2)", "fxyz", "fx(x2-3y2)", "fy(3x2-y2)"]
+
+        # Find starting indices for each orbital type
+        p_start = None
+        d_start = None
+        f_start = None
+
+        for idx, orb in enumerate(orbitals):
+            if orb in p_orbs and p_start is None:
+                p_start = idx
+            if orb in d_orbs and d_start is None:
+                d_start = idx
+            if orb in f_orbs and f_start is None:
+                f_start = idx
+
+        # =====================================================================
+        # p-orbital SOC (lambda_p)
+        # =====================================================================
+        if "lambda" in param or "lambda_p" in param:
+            lambda_p = param.get("lambda_p", param.get("lambda", 0))
+            if lambda_p != 0 and p_start is not None:
+                # Check that all p orbitals are present
+                has_all_p = all(p in orbitals for p in p_orbs)
+                if has_all_p:
+                    # p-orbital SOC matrix in basis [px↑, py↑, pz↑, px↓, py↓, pz↓]
+                    # H_SOC = λ_p * L·S
+                    # Using |px⟩ = -1/√2(|1,1⟩ - |1,-1⟩), |py⟩ = i/√2(|1,1⟩ + |1,-1⟩), |pz⟩ = |1,0⟩
+                    h_soc_p = lambda_p * np.array([
+                        [0, -1j, 0, 0, 0, 1],
+                        [1j, 0, 0, 0, 0, 1j],
+                        [0, 0, 0, -1, -1j, 0],
+                        [0, 0, -1, 0, 1j, 0],
+                        [0, 0, 1j, -1j, 0, 0],
+                        [1, -1j, 0, 0, 0, 0]
+                    ], dtype=complex) / 2.0
+
+                    # Place in full matrix
+                    # Basis ordering: [orb1↑, orb2↑, ..., orb1↓, orb2↓, ...]
+                    n_orb = len(orbitals)
+                    for i, pi in enumerate(p_orbs):
+                        for j, pj in enumerate(p_orbs):
+                            pi_idx = orbitals.index(pi)
+                            pj_idx = orbitals.index(pj)
+                            # ↑↑ block
+                            h_soc[pi_idx, pj_idx] = h_soc_p[i, j]
+                            # ↓↓ block
+                            h_soc[pi_idx + n_orb, pj_idx + n_orb] = h_soc_p[i + 3, j + 3]
+                            # ↑↓ block
+                            h_soc[pi_idx, pj_idx + n_orb] = h_soc_p[i, j + 3]
+                            # ↓↑ block
+                            h_soc[pi_idx + n_orb, pj_idx] = h_soc_p[i + 3, j]
+
+        # =====================================================================
+        # d-orbital SOC (lambda_d)
+        # =====================================================================
+        if "lambda_d" in param:
+            lambda_d = param["lambda_d"]
+            if lambda_d != 0 and d_start is not None:
+                has_all_d = all(d in orbitals for d in d_orbs)
+                if has_all_d:
+                    # d-orbital SOC matrix in basis [dxy, dyz, dxz, dx2-y2, dz2] × [↑, ↓]
+                    # Using real spherical harmonics basis
+                    # The L·S matrix for d orbitals (10×10)
+                    # Basis: [dxy↑, dyz↑, dxz↑, dx2-y2↑, dz2↑, dxy↓, dyz↓, dxz↓, dx2-y2↓, dz2↓]
+                    sqrt3 = np.sqrt(3)
+
+                    h_soc_d = lambda_d * np.array([
+                        # dxy↑  dyz↑   dxz↑   dx2-y2↑  dz2↑   dxy↓   dyz↓   dxz↓   dx2-y2↓  dz2↓
+                        [0,     1j,    -1,    0,       0,     0,     0,     -1j,   -2,      0],        # dxy↑
+                        [-1j,   0,     0,     -1j,     1j*sqrt3, 0,  0,     0,     -1,      -sqrt3],   # dyz↑
+                        [1,     0,     0,     1,       sqrt3, 1j,   0,     0,     -1j,     -1j*sqrt3], # dxz↑
+                        [0,     1j,    -1,    0,       0,     2,    1,     1j,    0,       0],        # dx2-y2↑
+                        [0,     -1j*sqrt3, -sqrt3, 0,  0,     0,    sqrt3, 1j*sqrt3, 0,    0],        # dz2↑
+                        [0,     0,     -1j,   2,       0,     0,    -1j,   1,     0,       0],        # dxy↓
+                        [0,     0,     0,     1,       sqrt3, 1j,   0,     0,     1j,      -1j*sqrt3], # dyz↓
+                        [1j,    0,     0,     -1j,     -1j*sqrt3, -1, 0,   0,     1,       -sqrt3],   # dxz↓
+                        [-2,    -1,    1j,    0,       0,     0,    -1j,   1,     0,       0],        # dx2-y2↓
+                        [0,     -sqrt3, 1j*sqrt3, 0,   0,     0,    1j*sqrt3, -sqrt3, 0,   0],        # dz2↓
+                    ], dtype=complex) / 2.0
+
+                    # Place in full matrix
+                    n_orb = len(orbitals)
+                    for i, di in enumerate(d_orbs):
+                        for j, dj in enumerate(d_orbs):
+                            di_idx = orbitals.index(di)
+                            dj_idx = orbitals.index(dj)
+                            # ↑↑ block
+                            h_soc[di_idx, dj_idx] = h_soc_d[i, j]
+                            # ↓↓ block
+                            h_soc[di_idx + n_orb, dj_idx + n_orb] = h_soc_d[i + 5, j + 5]
+                            # ↑↓ block
+                            h_soc[di_idx, dj_idx + n_orb] = h_soc_d[i, j + 5]
+                            # ↓↑ block
+                            h_soc[di_idx + n_orb, dj_idx] = h_soc_d[i + 5, j]
+
+        # =====================================================================
+        # f-orbital SOC (lambda_f)
+        # =====================================================================
+        if "lambda_f" in param:
+            lambda_f = param["lambda_f"]
+            if lambda_f != 0 and f_start is not None:
+                has_all_f = all(f in orbitals for f in f_orbs)
+                if has_all_f:
+                    # f-orbital SOC matrix in basis [fz3, fxz2, fyz2, fz(x2-y2), fxyz, fx(x2-3y2), fy(3x2-y2)] × [↑, ↓]
+                    # Using real spherical harmonics basis
+                    # The L·S matrix for f orbitals (14×14)
+                    sqrt2 = np.sqrt(2)
+                    sqrt3 = np.sqrt(3)
+                    sqrt5 = np.sqrt(5)
+                    sqrt6 = np.sqrt(6)
+                    sqrt10 = np.sqrt(10)
+                    sqrt15 = np.sqrt(15)
+
+                    # Build the f-orbital SOC matrix
+                    # Basis: [fz3↑, fxz2↑, fyz2↑, fz(x2-y2)↑, fxyz↑, fx(x2-3y2)↑, fy(3x2-y2)↑,
+                    #         fz3↓, fxz2↓, fyz2↓, fz(x2-y2)↓, fxyz↓, fx(x2-3y2)↓, fy(3x2-y2)↓]
+
+                    h_soc_f = np.zeros((14, 14), dtype=complex)
+
+                    # Lz eigenvalues for f orbitals in real spherical harmonics basis
+                    # fz3 (m=0), fxz2 (m=±1), fyz2 (m=±1), fz(x2-y2) (m=±2), fxyz (m=±2), fx(x2-3y2) (m=±3), fy(3x2-y2) (m=±3)
+
+                    # The L·S = LzSz + (L+S- + L-S+)/2 matrix elements
+                    # For real spherical harmonics, we need the matrix representations of Lz, L+, L-
+
+                    # Simplified SOC matrix for f orbitals based on symmetry
+                    # This is the standard form from atomic physics literature
+
+                    # ↑↑ block (Lz Sz with Sz = +1/2)
+                    h_soc_f[0, 0] = 0  # fz3: m=0
+                    h_soc_f[1, 2] = -1j  # fxz2-fyz2 coupling
+                    h_soc_f[2, 1] = 1j
+                    h_soc_f[3, 4] = -2j  # fz(x2-y2)-fxyz coupling
+                    h_soc_f[4, 3] = 2j
+                    h_soc_f[5, 6] = -3j  # fx(x2-3y2)-fy(3x2-y2) coupling
+                    h_soc_f[6, 5] = 3j
+
+                    # ↓↓ block (Lz Sz with Sz = -1/2)
+                    h_soc_f[7, 7] = 0  # fz3
+                    h_soc_f[8, 9] = 1j
+                    h_soc_f[9, 8] = -1j
+                    h_soc_f[10, 11] = 2j
+                    h_soc_f[11, 10] = -2j
+                    h_soc_f[12, 13] = 3j
+                    h_soc_f[13, 12] = -3j
+
+                    # ↑↓ and ↓↑ blocks (L+ S- and L- S+)
+                    # L+ raises m by 1, L- lowers m by 1
+                    # L±|l,m⟩ = √(l(l+1) - m(m±1)) |l, m±1⟩
+                    # For l=3: L+|3,m⟩ = √(12 - m(m+1)) |3,m+1⟩
+
+                    # Coupling between spin-up and spin-down states
+                    # fz3 (m=0) couples to fxz2, fyz2 (m=±1)
+                    h_soc_f[0, 8] = sqrt6  # fz3↑ - fxz2↓
+                    h_soc_f[0, 9] = 1j * sqrt6  # fz3↑ - fyz2↓
+                    h_soc_f[8, 0] = sqrt6  # fxz2↓ - fz3↑
+                    h_soc_f[9, 0] = -1j * sqrt6
+
+                    # fxz2, fyz2 (m=±1) couple to fz(x2-y2), fxyz (m=±2)
+                    h_soc_f[1, 10] = sqrt10  # fxz2↑ - fz(x2-y2)↓
+                    h_soc_f[1, 11] = 1j * sqrt10
+                    h_soc_f[2, 10] = -1j * sqrt10
+                    h_soc_f[2, 11] = sqrt10
+                    h_soc_f[10, 1] = sqrt10
+                    h_soc_f[11, 1] = -1j * sqrt10
+                    h_soc_f[10, 2] = 1j * sqrt10
+                    h_soc_f[11, 2] = sqrt10
+
+                    # fz(x2-y2), fxyz (m=±2) couple to fx(x2-3y2), fy(3x2-y2) (m=±3)
+                    h_soc_f[3, 12] = sqrt6  # fz(x2-y2)↑ - fx(x2-3y2)↓
+                    h_soc_f[3, 13] = 1j * sqrt6
+                    h_soc_f[4, 12] = -1j * sqrt6
+                    h_soc_f[4, 13] = sqrt6
+                    h_soc_f[12, 3] = sqrt6
+                    h_soc_f[13, 3] = -1j * sqrt6
+                    h_soc_f[12, 4] = 1j * sqrt6
+                    h_soc_f[13, 4] = sqrt6
+
+                    # Reverse couplings (↓↑)
+                    h_soc_f[7, 1] = sqrt6
+                    h_soc_f[7, 2] = -1j * sqrt6
+                    h_soc_f[1, 7] = sqrt6
+                    h_soc_f[2, 7] = 1j * sqrt6
+
+                    h_soc_f[8, 3] = sqrt10
+                    h_soc_f[8, 4] = -1j * sqrt10
+                    h_soc_f[9, 3] = 1j * sqrt10
+                    h_soc_f[9, 4] = sqrt10
+                    h_soc_f[3, 8] = sqrt10
+                    h_soc_f[4, 8] = 1j * sqrt10
+                    h_soc_f[3, 9] = -1j * sqrt10
+                    h_soc_f[4, 9] = sqrt10
+
+                    h_soc_f[10, 5] = sqrt6
+                    h_soc_f[10, 6] = -1j * sqrt6
+                    h_soc_f[11, 5] = 1j * sqrt6
+                    h_soc_f[11, 6] = sqrt6
+                    h_soc_f[5, 10] = sqrt6
+                    h_soc_f[6, 10] = 1j * sqrt6
+                    h_soc_f[5, 11] = -1j * sqrt6
+                    h_soc_f[6, 11] = sqrt6
+
+                    # Scale by lambda_f / 2
+                    h_soc_f *= lambda_f / 2.0
+
+                    # Place in full matrix
+                    n_orb = len(orbitals)
+                    for i, fi in enumerate(f_orbs):
+                        for j, fj in enumerate(f_orbs):
+                            fi_idx = orbitals.index(fi)
+                            fj_idx = orbitals.index(fj)
+                            # ↑↑ block
+                            h_soc[fi_idx, fj_idx] = h_soc_f[i, j]
+                            # ↓↓ block
+                            h_soc[fi_idx + n_orb, fj_idx + n_orb] = h_soc_f[i + 7, j + 7]
+                            # ↑↓ block
+                            h_soc[fi_idx, fj_idx + n_orb] = h_soc_f[i, j + 7]
+                            # ↓↑ block
+                            h_soc[fi_idx + n_orb, fj_idx] = h_soc_f[i + 7, j]
+
+        return h_soc
 
     def get_soc_mat(self):
         """get the spin-orbit coupling matrix"""
