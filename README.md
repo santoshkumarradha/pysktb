@@ -84,6 +84,11 @@ eigenvalues = ham.solve_kpath(kpts)
 - k-point parallelization
 - Total energy calculations
 
+**Green's Functions**
+- DOS with Lorentzian broadening
+- Local DOS (atom/orbital resolved)
+- Spectral function A(k,E)
+
 </td>
 </tr>
 </table>
@@ -136,6 +141,12 @@ Full examples in [examples.ipynb](./docs/source/examples/data/examples.ipynb)
 
 **f-orbital Systems** — See [f_orbital_example.py](./docs/source/examples/f_orbital_example.py) for Cerium-like lanthanide implementation with 4f electrons and spin-orbit coupling.
 
+**Green's Function DOS** — Graphene DOS and LDOS via Green's functions
+
+<img src="./docs/source/examples/data/greens_dos_graphene.png" height="200">
+
+See [greens_dos_example.py](./docs/source/examples/greens_dos_example.py) for computing DOS with physical Lorentzian broadening and sublattice-resolved LDOS.
+
 </details>
 
 ## Performance
@@ -161,7 +172,7 @@ Full examples in [examples.ipynb](./docs/source/examples/data/examples.ipynb)
 | ◐ | Berry phase calculation |
 | ○ | Bogoliubov-de-Gennes (BdG) for superconductivity |
 | ○ | [ASE](https://wiki.fysik.dtu.dk/ase/) structure interface |
-| ○ | Green's function DOS |
+| ● | Green's function DOS |
 | ○ | Sympy analytical matrix elements |
 | ○ | Low-energy k.p Hamiltonian extraction |
 
