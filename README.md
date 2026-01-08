@@ -57,63 +57,65 @@ eigenvalues = ham.solve_kpath(kpts)
 
 ## Features
 
-<table>
-<tr>
-<td width="50%">
+| Category | Feature | Status |
+|----------|---------|:------:|
+| **Orbital Basis** | s, p orbitals | ● |
+| | d orbitals | ● |
+| | f orbitals (lanthanides) | ● |
+| | Slater-Koster parametrization | ● |
+| **Spin Physics** | Spin-orbit coupling (p, d, f) | ● |
+| | Spin-polarized calculations | ● |
+| | Magnetic systems | ● |
+| **Green's Functions** | DOS with Lorentzian broadening | ● |
+| | Local DOS (atom/orbital resolved) | ● |
+| | Spectral function A(k,E) | ● |
+| | Topological edge states | ● |
+| **Structure** | 1D, 2D, 3D systems | ● |
+| | Beyond nearest-neighbor | ● |
+| | [pymatgen](https://pymatgen.org) integration | ● |
+| **Performance** | [Numba](https://numba.pydata.org) JIT compilation | ● |
+| | k-point parallelization | ● |
+| | Total energy calculations | ● |
 
-**Orbital Basis**
-- s, p, d, and f orbitals
-- Arbitrary orbital combinations
-- Slater-Koster parametrization
-
-**Spin Physics**
-- Spin-polarized calculations
-- Spin-orbit coupling (p, d, f)
-- Magnetic systems
-
-</td>
-<td width="50%">
-
-**Structure Support**
-- 1D, 2D, and 3D systems
-- Beyond nearest-neighbor interactions
-- [pymatgen](https://pymatgen.org) integration
-
-**Performance**
-- JIT compiled with [numba](https://numba.pydata.org)
-- k-point parallelization
-- Total energy calculations
-
-**Green's Functions**
-- DOS with Lorentzian broadening
-- Local DOS (atom/orbital resolved)
-- Spectral function A(k,E)
-- Topological edge states
-
-</td>
-</tr>
-</table>
+<sub>● complete · ◐ in progress · ○ planned</sub>
 
 ## Examples
 
-Full examples in [examples.ipynb](./docs/source/examples/data/examples.ipynb)
+Full examples in [examples.ipynb](./docs/source/examples/examples.ipynb)
 
 <table>
 <tr>
 <td align="center" width="33%">
-<img src="./docs/source/examples/data/graphene.png" height="160"><br>
+<img src="./docs/source/examples/data/edge_states_zigzag.png" height="180"><br>
+<sub><b>Topological Edge States</b><br>Spectral function A(k,E)</sub>
+</td>
+<td align="center" width="33%">
+<img src="./docs/source/examples/data/graphene.png" height="180"><br>
 <sub><b>Graphene</b><br>Band structure & BZ colorplot</sub>
 </td>
 <td align="center" width="33%">
-<img src="./docs/source/examples/data/Perovskite_soc.png" height="160"><br>
+<img src="./docs/source/examples/data/Perovskite_soc.png" height="180"><br>
 <sub><b>Halide Perovskites</b><br>Rashba SOC effect</sub>
-</td>
-<td align="center" width="33%">
-<img src="./docs/source/examples/data/f_orbital_bands.png" height="160"><br>
-<sub><b>Lanthanides</b><br>f-orbital with SOC</sub>
 </td>
 </tr>
 </table>
+
+### Clean Syntax
+
+```python
+# Band structure in 4 lines
+ham = Hamiltonian(structure, params)
+kpts, dist, pts = ham.get_kpts(path, nk=50)
+bands = ham.solve_kpath(kpts)
+
+# Green's function DOS in 3 lines
+gf = GreensFunction(ham)
+dos = gf.dos(energies, nk=[30, 30, 1], eta=0.1)
+
+# Edge states in 3 lines
+sgf = SurfaceGreensFunction(ham, surface_atoms=edge_atoms)
+edge_spectral = sgf.edge_spectral_kpath(k_values, energies)
+```
 
 <details>
 <summary><b>More examples</b></summary>

@@ -66,15 +66,32 @@ Why use PySKTB ❔
 ✨ Features
 --------
 
-- Generate s,p,d interactions in any given lattice
-- Total energy *for insulators and semimetals*
-- Specify range of interaction with more then Nearest neibghor
-- Spin Polarized calculations
-- Spin orbit coupling *(only for p orbitals as of now)*
-- Plot orbital weighted colorplots
-- Integration with `pymatgen <https://pymatgen.org>`_ structres 
-- JIT optimized with numba
-- Parallelization on kpoints
+**Orbital Basis**
+
+- Generate s, p, d, and f orbital interactions
+- Slater-Koster parametrization for any lattice
+- Arbitrary orbital combinations
+
+**Spin Physics**
+
+- Spin-orbit coupling (p, d, f orbitals)
+- Spin-polarized calculations
+- Magnetic systems support
+
+**Green's Functions**
+
+- Density of states with Lorentzian broadening
+- Local DOS (atom/orbital resolved)
+- Spectral function A(k,E)
+- Topological edge states via surface Green's functions
+
+**Structure & Performance**
+
+- 1D, 2D, and 3D systems
+- Beyond nearest-neighbor interactions
+- Integration with `pymatgen <https://pymatgen.org>`_ structures
+- JIT optimized with `numba <https://numba.pydata.org>`_
+- k-point parallelization
 
 .. _installation:
 
@@ -106,6 +123,8 @@ Why use PySKTB ❔
    pysktb.Structure
    pysktb.Hamiltonian
    pysktb.System
+   pysktb.GreensFunction
+   pysktb.SurfaceGreensFunction
 
 
 .. toctree::
