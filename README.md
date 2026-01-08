@@ -134,7 +134,7 @@ Full examples in [examples.ipynb](./docs/source/examples/data/examples.ipynb)
 </tr>
 </table>
 
-**f-orbital Systems** — See [f_orbital_example.py](./examples/f_orbital_example.py) for Cerium-like lanthanide implementation with 4f electrons and spin-orbit coupling.
+**f-orbital Systems** — See [f_orbital_example.py](./docs/source/examples/f_orbital_example.py) for Cerium-like lanthanide implementation with 4f electrons and spin-orbit coupling.
 
 </details>
 

@@ -15,7 +15,7 @@ Author: Santosh Kumar Radha
 
 import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -225,7 +225,7 @@ def main():
 
     # Plot and save
     print("\n6. Plotting band structure...")
-    output_file = os.path.join(os.path.dirname(__file__), "f_orbital_bands.png")
+    output_file = os.path.join(os.path.dirname(__file__), "data", "f_orbital_bands.png")
     fig, ax = plot_band_structure(kpts, kpts_dist, eigen_vals, spl_pnts, output_file)
 
     # Also create a zoomed plot showing f-band details
@@ -253,7 +253,7 @@ def main():
     ax2.grid(True, alpha=0.3)
 
     plt.tight_layout()
-    zoom_file = os.path.join(os.path.dirname(__file__), "f_orbital_bands_zoom.png")
+    zoom_file = os.path.join(os.path.dirname(__file__), "data", "f_orbital_bands_zoom.png")
     plt.savefig(zoom_file, dpi=150, bbox_inches='tight')
     print(f"   Zoomed plot saved to: {zoom_file}")
 
