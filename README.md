@@ -1,113 +1,128 @@
 <p align="center"><img width=30.5% src="./docs/source/_static/logo_full.png"></p>
 
+<p align="center">
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-v3.6+-blue.svg" alt="Python"></a>
+  <a href="https://github.com/santoshkumarradha/pysktb/issues"><img src="https://img.shields.io/github/issues/santoshkumarradha/pysktb.svg" alt="GitHub Issues"></a>
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
+  <a href="https://zenodo.org/badge/latestdoi/255115236"><img src="https://zenodo.org/badge/255115236.svg" alt="DOI"></a>
+</p>
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-![Python](https://img.shields.io/badge/python-v3.6+-blue.svg)
-[![Build Status](https://travis-ci.org/anfederico/Clairvoyant.svg?branch=master)](https://travis-ci.org/anfederico/Clairvoyant)
-![Dependencies](https://img.shields.io/badge/dependencies-up%20to%20date-brightgreen.svg)
-[![GitHub Issues](https://img.shields.io/github/issues/anfederico/Clairvoyant.svg)](https://github.com/anfederico/Clairvoyant/issues)
-![Contributions welcome](https://img.shields.io/badge/contributions-welcome-orange.svg)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+<p align="center">Scientific Python package for creating and solving Slater-Koster tight-binding Hamiltonians for 1D, 2D, and 3D systems — from topological insulators to strongly correlated materials.</p>
 
-<p align="center">Scientific Python package for solving Slater Koster tight-binding hamiltonian. A python package in development for creating and solving slater koster tight-binding hamiltonians for various 1D 2D and 3D systems from topological insulators to strong correlations.</p>
-
+---
 
 ## Documentation
 
-Documentation can be found at [https://pysktb.readthedocs.io](https://pysktb.readthedocs.io/en/latest/)
+Full documentation at [pysktb.readthedocs.io](https://pysktb.readthedocs.io/en/latest/)
 
 ## Features
 
-  - Generate s,p,d interactions in any given lattice
-  - Total energy *for insulators and semimetals*
-  - Specify range of interaction with more then Nearest neibghor
-  - Spin Polarized calculations
-  - Spin orbit coupling *(only for p orbitals as of now)*
-  - Plot orbital weighted colorplots
-  - Integration with [pymatgen](https://pymatgen.org) structres 
-  - JIT optimized with numba
-  - Parallelization on kpoints
+- Generate **s, p, d, and f orbital** interactions in any given lattice
+- Total energy calculations *for insulators and semimetals*
+- Specify interaction range beyond nearest neighbors
+- Spin polarized calculations
+- Spin-orbit coupling for p, d, and f orbitals
+- Orbital-weighted band structure plots
+- Integration with [pymatgen](https://pymatgen.org) structures
+- JIT optimized with [numba](https://numba.pydata.org)
+- Parallelization over k-points
 
 ## Installation
+
 ```console
 pip install pysktb
 ```
 
- 
 ## Examples
 
-Example usage shown in 	[examples.ipynb](./docs/source/examples/data/examples.ipynb)
+Example usage shown in [examples.ipynb](./docs/source/examples/data/examples.ipynb)
 
+### 1D sp-chain (SSH model)
 
-1. 1D chain of sp (example of 1D topological Crystiline insulator *SSH*)
-  
- <img src="./docs/source/examples/data/sp-chain.png" style="max-height: 70px; max-width: 70px;" >
-  
-  - with orbital projection on s
-  <img src="./docs/source/examples/data/sp-chain-proj.png" style="max-height: 70px; max-width: 70px;" >
-  
-  - DOS
-  
-  <img src="./docs/source/examples/data/sp-chain-dos.png" height="200" >
-  
-2. Graphene and band colorplot in BZ
+Topological crystalline insulator with s-p hybridization
 
-  <img src="./docs/source/examples/data/graphene.png" style="max-height: 70px; max-width: 70px;" >
-  
-2. Intrinsic Spin-Orbit-Coupling Rashba effect in Halide Perovskites
+<img src="./docs/source/examples/data/sp-chain.png" height="180">
 
-  <img src="./docs/source/examples/data/Perovskite_soc.png" style="max-height: 70px; max-width: 70px;" >
-  
-3. Buckled antimony Sb 
+With orbital projection on s orbital:
 
-   - preprint of Dirac cones merging in 2D Sb https://arxiv.org/abs/1912.03755
-   
-   <img src="./docs/source/examples/data/Sb-flat.png" style="max-height: 70px; max-width: 70px;" >
-   
-   - preprint of Higher Order Topological states in 2D Sb https://arxiv.org/abs/2003.12656
-   
-   <img src="./docs/source/examples/data/Sb_buckled.png" style="max-height: 70px; max-width: 70px;" >
-   
-4. Low buckled Sb Surface states with SOC - Topological Crystalline Insulator
+<img src="./docs/source/examples/data/sp-chain-proj.png" height="180">
 
- <img src="./docs/source/examples/data/buckled_sb_SOC.png" style="max-height: 70px; max-width: 70px;" >
- 
+Density of states:
 
+<img src="./docs/source/examples/data/sp-chain-dos.png" height="180">
 
-## Optimized 
-  - with `jit`
-<img src="./docs/source/examples/data/pysktb_numba.png" height="200" >
-- Parallelized over k
-<img src="./docs/source/examples/data/pysktb_parallel.png" height="200" >
+### Graphene
 
-## Features to be added
-   - Complete pymatgen integration (high on priority)
-   - Berry phase calculation (high on priority) *already implemented need to interface*
-   - ~Parallelization on kpoints~ and orbitals.
-   - ~scipy sparse matrix optimized~
-   - Spin Orbit Coupling for d,f
-   - Bogoliubov-de-Gennes (BdG) solutions for the given system for Superconductivity 
-   - Interface with [ASE](https://wiki.fysik.dtu.dk/ase/) structures
-   - Create finite structures and slabs for Topological calculations within the code *(requires pymatgen right now)*
-   - Greens function DOS
-   - Convert all operations to sympy, so that one can output analytical Tightbinding matrix elements for ease of access 
-   - Low energy k.p hamiltonian from sympy
-   
+Band structure and colorplot in Brillouin zone
+
+<img src="./docs/source/examples/data/graphene.png" height="200">
+
+### Halide Perovskites with SOC
+
+Intrinsic spin-orbit coupling and Rashba effect
+
+<img src="./docs/source/examples/data/Perovskite_soc.png" height="200">
+
+### Buckled Antimony (Sb)
+
+Dirac cone merging in 2D Sb ([arXiv:1912.03755](https://arxiv.org/abs/1912.03755))
+
+<img src="./docs/source/examples/data/Sb-flat.png" height="200">
+
+Higher-order topological states in 2D Sb ([arXiv:2003.12656](https://arxiv.org/abs/2003.12656))
+
+<img src="./docs/source/examples/data/Sb_buckled.png" height="200">
+
+Surface states with SOC — Topological Crystalline Insulator
+
+<img src="./docs/source/examples/data/buckled_sb_SOC.png" height="200">
+
+### f-orbital Systems (Lanthanides)
+
+Cerium-like system with 4f electrons and spin-orbit coupling. Narrow f-bands characteristic of localized 4f electrons with SOC-induced splitting.
+
+<img src="./docs/source/examples/data/f_orbital_bands.png" height="200">
+
+See [examples/f_orbital_example.py](./examples/f_orbital_example.py) for the full implementation.
+
+## Performance
+
+JIT compilation with numba:
+
+<img src="./docs/source/examples/data/pysktb_numba.png" height="200">
+
+Parallelization over k-points:
+
+<img src="./docs/source/examples/data/pysktb_parallel.png" height="200">
+
+## Roadmap
+
+- Complete pymatgen integration
+- Berry phase calculation *(implemented, needs interface)*
+- Parallelization over orbitals
+- Bogoliubov-de-Gennes (BdG) for superconductivity
+- Interface with [ASE](https://wiki.fysik.dtu.dk/ase/) structures
+- Finite structures and slabs for topological calculations
+- Green's function DOS
+- Sympy integration for analytical tight-binding matrix elements
+- Low-energy k.p Hamiltonian extraction
+
 ## Citation
-If you are using the code, please consider citing it with the followig bib
-[![DOI](https://zenodo.org/badge/255115236.svg)](https://zenodo.org/badge/latestdoi/255115236)
-```python
+
+If you use this code, please cite:
+
+```bibtex
 @misc{https://doi.org/10.5281/zenodo.4311595,
   doi = {10.5281/ZENODO.4311595},
   url = {https://zenodo.org/record/4311595},
-  author = {Radha,  Santosh Kumar},
+  author = {Radha, Santosh Kumar},
   title = {santoshkumarradha/pysktb: Tightbinding Electronic structure codes},
   publisher = {Zenodo},
   year = {2020},
   copyright = {Open Access}
 }
 ```
-   
+
 ## License
 
-[MIT](LICENSE) 
+[MIT](LICENSE)
