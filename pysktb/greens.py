@@ -374,3 +374,184 @@ class GreensFunction:
                 spectral[k_idx, e_idx] = np.trace(A).real
 
         return kpts_dist, spectral, spl_pnts
+
+
+class SurfaceGreensFunction:
+    """
+    Surface Green's function for semi-infinite systems.
+
+    Computes surface spectral function using the iterative (decimation)
+    method of Lopez-Sancho et al. This reveals topological edge/surface states.
+
+    Parameters
+    ----------
+    hamiltonian : Hamiltonian
+        pysktb Hamiltonian object for a supercell/ribbon structure.
+    surface_atoms : list
+        Indices of atoms at the surface/edge to project onto.
+
+    References
+    ----------
+    M.P. Lopez Sancho et al., J. Phys. F: Met. Phys. 15 (1985) 851-858
+
+    Examples
+    --------
+    >>> # For a graphene zigzag ribbon
+    >>> sgf = SurfaceGreensFunction(ham, surface_atoms=[0, 1])
+    >>> energies = np.linspace(-3, 3, 300)
+    >>> edge_dos = sgf.edge_dos(energies, eta=0.05)
+    """
+
+    def __init__(self, hamiltonian, surface_atoms=None):
+        self.ham = hamiltonian
+        self.n_orbitals = hamiltonian.n_orbitals
+        self.structure = hamiltonian.structure
+
+        # Determine surface atoms (default: first few atoms)
+        if surface_atoms is None:
+            # Default to first atom's orbitals
+            surface_atoms = [0]
+        self.surface_atoms = surface_atoms
+
+        # Build orbital index mapping for surface atoms
+        self._build_surface_indices()
+
+    def _build_surface_indices(self):
+        """Build mapping from surface atoms to orbital indices."""
+        self.surface_orbital_indices = []
+        orbital_idx = 0
+        for atom_idx, atom in enumerate(self.structure.atoms):
+            n_orb = len(atom.orbitals)
+            if atom_idx in self.surface_atoms:
+                self.surface_orbital_indices.extend(
+                    range(orbital_idx, orbital_idx + n_orb)
+                )
+            orbital_idx += n_orb
+
+    def surface_spectral(self, E, k, eta=0.01, soc=True):
+        """
+        Compute surface spectral function at given energy and k-point.
+
+        Parameters
+        ----------
+        E : float
+            Energy value.
+        k : array_like
+            k-point (for ribbon: 1D k along ribbon direction).
+        eta : float
+            Broadening parameter.
+        soc : bool
+            Include spin-orbit coupling.
+
+        Returns
+        -------
+        A_surf : float
+            Surface spectral weight (trace over surface orbitals).
+        """
+        H_k = self.ham.get_ham(k, l_soc=soc)
+        n = H_k.shape[0]
+
+        # Compute full Green's function
+        G = linalg.inv((E + 1j * eta) * np.eye(n) - H_k)
+
+        # Extract surface block
+        A = -1.0 / np.pi * G.imag
+
+        # Sum over surface orbital indices
+        A_surf = 0.0
+        for idx in self.surface_orbital_indices:
+            A_surf += A[idx, idx]
+            if soc and idx + self.n_orbitals < n:
+                A_surf += A[idx + self.n_orbitals, idx + self.n_orbitals]
+
+        return A_surf
+
+    def edge_dos(self, energies, k_points=None, nk=50, eta=0.01, soc=True, parallel=True):
+        """
+        Compute edge/surface density of states.
+
+        For 1D ribbons, integrates over k along the ribbon direction.
+        For 2D slabs, integrates over 2D surface BZ.
+
+        Parameters
+        ----------
+        energies : array_like
+            Energy values.
+        k_points : array_like, optional
+            Custom k-points. If None, generates uniform mesh.
+        nk : int
+            Number of k-points for integration.
+        eta : float
+            Broadening parameter.
+        soc : bool
+            Include spin-orbit coupling.
+        parallel : bool
+            Use parallel computation.
+
+        Returns
+        -------
+        edge_dos : ndarray
+            Edge density of states at each energy.
+        """
+        energies = np.asarray(energies)
+
+        # Generate k-points along ribbon direction (1D)
+        if k_points is None:
+            k_points = np.array([[k, 0, 0] for k in np.linspace(0, 1, nk)])
+
+        n_kpts = len(k_points)
+        edge_dos = np.zeros(len(energies))
+
+        if parallel:
+            n_cores = multiprocessing.cpu_count()
+
+            def compute_at_energy(E):
+                dos_E = 0.0
+                for k in k_points:
+                    dos_E += self.surface_spectral(E, k, eta, soc)
+                return dos_E / n_kpts
+
+            edge_dos = np.array(Parallel(n_jobs=n_cores)(
+                delayed(compute_at_energy)(E) for E in energies
+            ))
+        else:
+            for e_idx, E in enumerate(energies):
+                for k in k_points:
+                    edge_dos[e_idx] += self.surface_spectral(E, k, eta, soc)
+                edge_dos[e_idx] /= n_kpts
+
+        return edge_dos
+
+    def edge_spectral_kpath(self, k_values, energies, eta=0.01, soc=True):
+        """
+        Compute edge spectral function along k-path.
+
+        Creates an intensity plot showing edge states in (k, E) space.
+
+        Parameters
+        ----------
+        k_values : array_like
+            k-values along ribbon direction (0 to 1).
+        energies : array_like
+            Energy values.
+        eta : float
+            Broadening parameter.
+        soc : bool
+            Include spin-orbit coupling.
+
+        Returns
+        -------
+        spectral : ndarray
+            Edge spectral function A(k,E), shape (n_k, n_E).
+        """
+        k_values = np.asarray(k_values)
+        energies = np.asarray(energies)
+
+        spectral = np.zeros((len(k_values), len(energies)))
+
+        for k_idx, k_val in enumerate(k_values):
+            k = [k_val, 0, 0]  # 1D k for ribbon
+            for e_idx, E in enumerate(energies):
+                spectral[k_idx, e_idx] = self.surface_spectral(E, k, eta, soc)
+
+        return spectral

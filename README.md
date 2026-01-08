@@ -88,6 +88,7 @@ eigenvalues = ham.solve_kpath(kpts)
 - DOS with Lorentzian broadening
 - Local DOS (atom/orbital resolved)
 - Spectral function A(k,E)
+- Topological edge states
 
 </td>
 </tr>
@@ -147,6 +148,12 @@ Full examples in [examples.ipynb](./docs/source/examples/data/examples.ipynb)
 
 See [greens_dos_example.py](./docs/source/examples/greens_dos_example.py) for computing DOS with physical Lorentzian broadening and sublattice-resolved LDOS.
 
+**Edge States** — Topological edge states in graphene zigzag ribbon
+
+<img src="./docs/source/examples/data/edge_states_zigzag.png" height="220">
+
+See [edge_states_example.py](./docs/source/examples/edge_states_example.py) for computing edge spectral functions and visualizing flat-band edge states at E=0.
+
 </details>
 
 ## Performance
@@ -173,6 +180,7 @@ See [greens_dos_example.py](./docs/source/examples/greens_dos_example.py) for co
 | ○ | Bogoliubov-de-Gennes (BdG) for superconductivity |
 | ○ | [ASE](https://wiki.fysik.dtu.dk/ase/) structure interface |
 | ● | Green's function DOS |
+| ● | Topological edge states |
 | ○ | Sympy analytical matrix elements |
 | ○ | Low-energy k.p Hamiltonian extraction |
 
