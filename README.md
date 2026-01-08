@@ -1,113 +1,187 @@
-<p align="center"><img width=30.5% src="./docs/source/_static/logo_full.png"></p>
+<p align="center">
+  <img width="30%" src="./docs/source/_static/logo_full.png">
+</p>
 
+<p align="center">
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.6+-blue.svg" alt="Python"></a>
+  <a href="https://pysktb.readthedocs.io"><img src="https://img.shields.io/badge/docs-readthedocs-blue.svg" alt="Documentation"></a>
+  <a href="https://github.com/santoshkumarradha/pysktb/issues"><img src="https://img.shields.io/github/issues/santoshkumarradha/pysktb.svg" alt="Issues"></a>
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
+  <a href="https://zenodo.org/badge/latestdoi/255115236"><img src="https://zenodo.org/badge/255115236.svg" alt="DOI"></a>
+</p>
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-![Python](https://img.shields.io/badge/python-v3.6+-blue.svg)
-[![Build Status](https://travis-ci.org/anfederico/Clairvoyant.svg?branch=master)](https://travis-ci.org/anfederico/Clairvoyant)
-![Dependencies](https://img.shields.io/badge/dependencies-up%20to%20date-brightgreen.svg)
-[![GitHub Issues](https://img.shields.io/github/issues/anfederico/Clairvoyant.svg)](https://github.com/anfederico/Clairvoyant/issues)
-![Contributions welcome](https://img.shields.io/badge/contributions-welcome-orange.svg)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+<p align="center">
+  <b>Slater-Koster tight-binding Hamiltonians for 1D, 2D, and 3D systems</b><br>
+  <sub>From topological insulators to strongly correlated f-electron materials</sub>
+</p>
 
-<p align="center">Scientific Python package for solving Slater Koster tight-binding hamiltonian. A python package in development for creating and solving slater koster tight-binding hamiltonians for various 1D 2D and 3D systems from topological insulators to strong correlations.</p>
+<p align="center">
+  <a href="https://pysktb.readthedocs.io">Documentation</a> •
+  <a href="#installation">Installation</a> •
+  <a href="#examples">Examples</a> •
+  <a href="#citation">Citation</a>
+</p>
 
-
-## Documentation
-
-Documentation can be found at [https://pysktb.readthedocs.io](https://pysktb.readthedocs.io/en/latest/)
-
-## Features
-
-  - Generate s,p,d interactions in any given lattice
-  - Total energy *for insulators and semimetals*
-  - Specify range of interaction with more then Nearest neibghor
-  - Spin Polarized calculations
-  - Spin orbit coupling *(only for p orbitals as of now)*
-  - Plot orbital weighted colorplots
-  - Integration with [pymatgen](https://pymatgen.org) structres 
-  - JIT optimized with numba
-  - Parallelization on kpoints
+---
 
 ## Installation
-```console
+
+```bash
 pip install pysktb
 ```
 
- 
+For the latest development version (includes f-orbital support):
+
+```bash
+git clone https://github.com/santoshkumarradha/pysktb.git
+cd pysktb
+pip install -e .
+```
+
+## Quick Start
+
+```python
+from pysktb import Lattice, Atom, Structure, Hamiltonian
+
+# Define lattice and atoms
+lattice = Lattice([[1, 0, 0], [0, 1, 0], [0, 0, 1]], a=3.5)
+atom = Atom("X", [0, 0, 0], orbitals=["s", "px", "py", "pz"])
+structure = Structure(lattice, [atom], bond_cut={"XX": {"NN": 3.6}})
+
+# Set up Hamiltonian and solve
+params = {"X": {"e_s": 0, "e_p": 1.5}, "XX": {"V_sss": -0.5, "V_sps": 0.5, "V_pps": 0.8, "V_ppp": -0.2}}
+ham = Hamiltonian(structure, params)
+kpts, kpts_dist, spl_pnts = ham.get_kpts([[0,0,0], [0.5,0.5,0.5]], nk=50)
+eigenvalues = ham.solve_kpath(kpts)
+```
+
+## Features
+
+<table>
+<tr>
+<td width="50%">
+
+**Orbital Basis**
+- s, p, d, and f orbitals
+- Arbitrary orbital combinations
+- Slater-Koster parametrization
+
+**Spin Physics**
+- Spin-polarized calculations
+- Spin-orbit coupling (p, d, f)
+- Magnetic systems
+
+</td>
+<td width="50%">
+
+**Structure Support**
+- 1D, 2D, and 3D systems
+- Beyond nearest-neighbor interactions
+- [pymatgen](https://pymatgen.org) integration
+
+**Performance**
+- JIT compiled with [numba](https://numba.pydata.org)
+- k-point parallelization
+- Total energy calculations
+
+</td>
+</tr>
+</table>
+
 ## Examples
 
-Example usage shown in 	[examples.ipynb](./docs/source/examples/data/examples.ipynb)
+Full examples in [examples.ipynb](./docs/source/examples/data/examples.ipynb)
 
+<table>
+<tr>
+<td align="center" width="33%">
+<img src="./docs/source/examples/data/graphene.png" height="160"><br>
+<sub><b>Graphene</b><br>Band structure & BZ colorplot</sub>
+</td>
+<td align="center" width="33%">
+<img src="./docs/source/examples/data/Perovskite_soc.png" height="160"><br>
+<sub><b>Halide Perovskites</b><br>Rashba SOC effect</sub>
+</td>
+<td align="center" width="33%">
+<img src="./docs/source/examples/data/f_orbital_bands.png" height="160"><br>
+<sub><b>Lanthanides</b><br>f-orbital with SOC</sub>
+</td>
+</tr>
+</table>
 
-1. 1D chain of sp (example of 1D topological Crystiline insulator *SSH*)
-  
- <img src="./docs/source/examples/data/sp-chain.png" style="max-height: 70px; max-width: 70px;" >
-  
-  - with orbital projection on s
-  <img src="./docs/source/examples/data/sp-chain-proj.png" style="max-height: 70px; max-width: 70px;" >
-  
-  - DOS
-  
-  <img src="./docs/source/examples/data/sp-chain-dos.png" height="200" >
-  
-2. Graphene and band colorplot in BZ
+<details>
+<summary><b>More examples</b></summary>
 
-  <img src="./docs/source/examples/data/graphene.png" style="max-height: 70px; max-width: 70px;" >
-  
-2. Intrinsic Spin-Orbit-Coupling Rashba effect in Halide Perovskites
+<br>
 
-  <img src="./docs/source/examples/data/Perovskite_soc.png" style="max-height: 70px; max-width: 70px;" >
-  
-3. Buckled antimony Sb 
+**1D sp-chain (SSH model)** — Topological crystalline insulator
 
-   - preprint of Dirac cones merging in 2D Sb https://arxiv.org/abs/1912.03755
-   
-   <img src="./docs/source/examples/data/Sb-flat.png" style="max-height: 70px; max-width: 70px;" >
-   
-   - preprint of Higher Order Topological states in 2D Sb https://arxiv.org/abs/2003.12656
-   
-   <img src="./docs/source/examples/data/Sb_buckled.png" style="max-height: 70px; max-width: 70px;" >
-   
-4. Low buckled Sb Surface states with SOC - Topological Crystalline Insulator
+<table>
+<tr>
+<td align="center"><img src="./docs/source/examples/data/sp-chain.png" height="140"><br><sub>Band structure</sub></td>
+<td align="center"><img src="./docs/source/examples/data/sp-chain-proj.png" height="140"><br><sub>Orbital projection</sub></td>
+<td align="center"><img src="./docs/source/examples/data/sp-chain-dos.png" height="140"><br><sub>Density of states</sub></td>
+</tr>
+</table>
 
- <img src="./docs/source/examples/data/buckled_sb_SOC.png" style="max-height: 70px; max-width: 70px;" >
- 
+**Buckled Antimony** — Topological states
 
+<table>
+<tr>
+<td align="center"><img src="./docs/source/examples/data/Sb-flat.png" height="150"><br><sub>Dirac cone merging<br><a href="https://arxiv.org/abs/1912.03755">arXiv:1912.03755</a></sub></td>
+<td align="center"><img src="./docs/source/examples/data/Sb_buckled.png" height="150"><br><sub>Higher-order topology<br><a href="https://arxiv.org/abs/2003.12656">arXiv:2003.12656</a></sub></td>
+<td align="center"><img src="./docs/source/examples/data/buckled_sb_SOC.png" height="150"><br><sub>Surface states with SOC</sub></td>
+</tr>
+</table>
 
-## Optimized 
-  - with `jit`
-<img src="./docs/source/examples/data/pysktb_numba.png" height="200" >
-- Parallelized over k
-<img src="./docs/source/examples/data/pysktb_parallel.png" height="200" >
+**f-orbital Systems** — See [f_orbital_example.py](./docs/source/examples/f_orbital_example.py) for Cerium-like lanthanide implementation with 4f electrons and spin-orbit coupling.
 
-## Features to be added
-   - Complete pymatgen integration (high on priority)
-   - Berry phase calculation (high on priority) *already implemented need to interface*
-   - ~Parallelization on kpoints~ and orbitals.
-   - ~scipy sparse matrix optimized~
-   - Spin Orbit Coupling for d,f
-   - Bogoliubov-de-Gennes (BdG) solutions for the given system for Superconductivity 
-   - Interface with [ASE](https://wiki.fysik.dtu.dk/ase/) structures
-   - Create finite structures and slabs for Topological calculations within the code *(requires pymatgen right now)*
-   - Greens function DOS
-   - Convert all operations to sympy, so that one can output analytical Tightbinding matrix elements for ease of access 
-   - Low energy k.p hamiltonian from sympy
-   
+</details>
+
+## Performance
+
+<table>
+<tr>
+<td align="center" width="50%">
+<img src="./docs/source/examples/data/pysktb_numba.png" height="180"><br>
+<sub>JIT compilation speedup</sub>
+</td>
+<td align="center" width="50%">
+<img src="./docs/source/examples/data/pysktb_parallel.png" height="180"><br>
+<sub>k-point parallelization</sub>
+</td>
+</tr>
+</table>
+
+## Roadmap
+
+| Status | Feature |
+|:------:|---------|
+| ◐ | Complete pymatgen integration |
+| ◐ | Berry phase calculation |
+| ○ | Bogoliubov-de-Gennes (BdG) for superconductivity |
+| ○ | [ASE](https://wiki.fysik.dtu.dk/ase/) structure interface |
+| ○ | Green's function DOS |
+| ○ | Sympy analytical matrix elements |
+| ○ | Low-energy k.p Hamiltonian extraction |
+
+<sub>● complete · ◐ in progress · ○ planned</sub>
+
 ## Citation
-If you are using the code, please consider citing it with the followig bib
-[![DOI](https://zenodo.org/badge/255115236.svg)](https://zenodo.org/badge/latestdoi/255115236)
-```python
-@misc{https://doi.org/10.5281/zenodo.4311595,
-  doi = {10.5281/ZENODO.4311595},
-  url = {https://zenodo.org/record/4311595},
-  author = {Radha,  Santosh Kumar},
-  title = {santoshkumarradha/pysktb: Tightbinding Electronic structure codes},
+
+If you use this code in your research, please cite:
+
+```bibtex
+@misc{pysktb,
+  doi       = {10.5281/ZENODO.4311595},
+  url       = {https://zenodo.org/record/4311595},
+  author    = {Radha, Santosh Kumar},
+  title     = {pysktb: Tight-binding electronic structure codes},
   publisher = {Zenodo},
-  year = {2020},
-  copyright = {Open Access}
+  year      = {2020}
 }
 ```
-   
+
 ## License
 
-[MIT](LICENSE) 
+[MIT](LICENSE)
