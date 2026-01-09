@@ -231,3 +231,114 @@ class AtomicOrbital:
         """
         x, y, z = grid_points[:, 0], grid_points[:, 1], grid_points[:, 2]
         return self.evaluate(x, y, z)
+
+
+def _get_orbital_shell(orbital_name: str) -> str:
+    """Map orbital name to shell (e.g., 'pz' -> '2p')."""
+    if orbital_name == "s":
+        return "1s"  # Could be 2s, 3s etc - user should override
+    elif orbital_name in ["px", "py", "pz"]:
+        return "2p"
+    elif orbital_name in ["dxy", "dyz", "dz2", "dxz", "dx2-y2"]:
+        return "3d"
+    elif orbital_name.startswith("f"):
+        return "4f"
+    return None
+
+
+def _get_principal_quantum_number(shell: str) -> int:
+    """Extract n from shell name like '2p' -> 2."""
+    return int(shell[0])
+
+
+class OrbitalBasis:
+    """Collection of atomic orbitals for a structure.
+
+    Manages the radial functions for each orbital type in the structure,
+    enabling evaluation of Bloch wavefunctions and charge densities.
+
+    Example:
+        >>> basis = OrbitalBasis.from_defaults(structure)
+        >>> # Or with custom parameters
+        >>> basis = OrbitalBasis(structure, {"C": {"pz": SlaterOrbital(2, 1.5)}})
+    """
+
+    def __init__(self, structure, radial_params: Optional[Dict] = None):
+        """
+        Args:
+            structure: pysktb Structure object
+            radial_params: Dict mapping element -> orbital -> RadialFunction
+                          e.g., {"C": {"pz": SlaterOrbital(2, 1.72)}}
+        """
+        self.structure = structure
+        self.radial_params = radial_params or {}
+        self._orbitals = {}
+        self._build_orbitals()
+
+    def _build_orbitals(self):
+        """Build AtomicOrbital objects for each orbital in structure."""
+        for atom_idx, atom in enumerate(self.structure.atoms):
+            element = atom.element
+            for orbital_name in atom.orbitals:
+                key = (atom_idx, orbital_name)
+
+                # Get radial function
+                if element in self.radial_params and orbital_name in self.radial_params[element]:
+                    radial = self.radial_params[element][orbital_name]
+                else:
+                    radial = self._get_default_radial(element, orbital_name)
+
+                self._orbitals[key] = AtomicOrbital(orbital_name, radial)
+
+    def _get_default_radial(self, element: str, orbital_name: str) -> RadialFunction:
+        """Get default radial function from Clementi-Raimondi table."""
+        shell = _get_orbital_shell(orbital_name)
+        n = _get_principal_quantum_number(shell)
+
+        if element in DEFAULT_SLATER_ZETA:
+            element_params = DEFAULT_SLATER_ZETA[element]
+            # Try exact shell match
+            if shell in element_params:
+                zeta = element_params[shell]
+                return SlaterOrbital(n, zeta)
+            # Try matching by l (e.g., "2p" for any p orbital)
+            for key, zeta in element_params.items():
+                if key.endswith(shell[-1]):  # Match 's', 'p', 'd', 'f'
+                    n_from_key = int(key[0])
+                    return SlaterOrbital(n_from_key, zeta)
+
+        # Fallback: estimate zeta from Slater's rules
+        zeta = self._estimate_zeta(element, orbital_name)
+        return SlaterOrbital(n, zeta)
+
+    def _estimate_zeta(self, element: str, orbital_name: str) -> float:
+        """Estimate Slater exponent using Slater's rules (rough approximation)."""
+        # Very rough approximation - user should provide better values
+        shell = _get_orbital_shell(orbital_name)
+        n = _get_principal_quantum_number(shell)
+        # Simple estimate: zeta ~ Z_eff / n, where Z_eff ~ sqrt(ionization energy)
+        return 1.0 + 0.3 * n  # Placeholder
+
+    def get_orbital(self, atom_idx: int, orbital_name: str) -> AtomicOrbital:
+        """Get AtomicOrbital for given atom and orbital."""
+        return self._orbitals[(atom_idx, orbital_name)]
+
+    def get_atom_position(self, atom_idx: int) -> np.ndarray:
+        """Get Cartesian position of atom in Angstroms."""
+        atom = self.structure.atoms[atom_idx]
+        frac_pos = np.array(atom.position)
+        return self.structure.lattice.get_cartesian_coords(frac_pos)
+
+    @classmethod
+    def from_defaults(cls, structure, overrides: Optional[Dict] = None):
+        """Create OrbitalBasis using default Slater exponents.
+
+        Args:
+            structure: pysktb Structure
+            overrides: Optional dict to override specific orbitals
+                      e.g., {"C": {"pz": SlaterOrbital(2, 1.5)}}
+
+        Returns:
+            OrbitalBasis with default radial functions
+        """
+        return cls(structure, overrides)
