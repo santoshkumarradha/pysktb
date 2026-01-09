@@ -115,7 +115,9 @@ class Forces:
         eigenvectors = eigenvectors[:, idx]
 
         # Determine occupation (T=0 for now)
-        n_occupied = n_electrons // 2 if soc else n_electrons
+        # soc=True: spin explicit in H, fill n_electrons states
+        # soc=False: spin-degenerate, fill n_electrons/2 states
+        n_occupied = n_electrons if soc else n_electrons // 2
         n_occupied = min(n_occupied, n_bands)
 
         forces = np.zeros((self.n_atoms, 3))
@@ -129,10 +131,10 @@ class Forces:
                 for n in range(n_occupied):
                     psi_n = eigenvectors[:, n]
                     force_contrib = np.real(np.conj(psi_n) @ dH_dR @ psi_n)
-                    forces[atom_idx, direction] -= 2.0 * force_contrib  # Factor 2 for spin if no SOC
-
-        if soc:
-            forces /= 2.0  # Correct for double-counting with SOC
+                    if soc:
+                        forces[atom_idx, direction] -= force_contrib
+                    else:
+                        forces[atom_idx, direction] -= 2.0 * force_contrib  # Factor 2 for spin
 
         return forces
 
@@ -384,16 +386,18 @@ class Forces:
         # Band energy
         E_band = 0.0
         n_bands = self.n_orbitals * 2 if soc else self.n_orbitals
-        n_occupied = n_electrons // 2 if soc else n_electrons
+        # soc=True: spin explicit in H, fill n_electrons states
+        # soc=False: spin-degenerate, fill n_electrons/2 states
+        n_occupied = n_electrons if soc else n_electrons // 2
 
         for k in kpts:
             ham = self.ham.get_ham(k, l_soc=soc)
             eigenvalues = np.linalg.eigvalsh(ham)
             eigenvalues = np.sort(eigenvalues)
-            E_band += weight * 2.0 * np.sum(eigenvalues[:n_occupied])
-
-        if soc:
-            E_band /= 2.0
+            if soc:
+                E_band += weight * np.sum(eigenvalues[:n_occupied])
+            else:
+                E_band += weight * 2.0 * np.sum(eigenvalues[:n_occupied])  # Factor 2 for spin
 
         # Repulsive energy
         E_rep = self._get_repulsive_energy()
