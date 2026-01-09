@@ -4,8 +4,60 @@ from .lattice import Lattice
 from .system import System
 from .hamiltonian import Hamiltonian
 from .greens import GreensFunction, SurfaceGreensFunction
+from .forces import Forces
 from .__version__ import __version__
 
+# Scaling laws for distance-dependent hopping
+from .scaling import (
+    ScalingLaw,
+    Constant,
+    Harrison,
+    PowerLaw,
+    Exponential,
+    GSP,
+    Polynomial,
+    Tabulated,
+    Custom,
+    ensure_scaling,
+)
 
-__all__ = ["Structure", "Atom", "Lattice", "System", "Hamiltonian", "GreensFunction", "SurfaceGreensFunction"]
+# Repulsive potentials
+from .repulsive import (
+    RepulsivePotential,
+    BornMayer,
+    Buckingham,
+    Morse,
+    SplineRepulsive,
+    ZeroPotential,
+)
+
+__all__ = [
+    # Core classes
+    "Structure",
+    "Atom",
+    "Lattice",
+    "System",
+    "Hamiltonian",
+    "GreensFunction",
+    "SurfaceGreensFunction",
+    "Forces",
+    # Scaling laws
+    "ScalingLaw",
+    "Constant",
+    "Harrison",
+    "PowerLaw",
+    "Exponential",
+    "GSP",
+    "Polynomial",
+    "Tabulated",
+    "Custom",
+    "ensure_scaling",
+    # Repulsive potentials
+    "RepulsivePotential",
+    "BornMayer",
+    "Buckingham",
+    "Morse",
+    "SplineRepulsive",
+    "ZeroPotential",
+]
 

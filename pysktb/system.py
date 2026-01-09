@@ -11,6 +11,8 @@ import itertools
 import numpy as np
 from scipy import linalg
 
+from .scaling import ScalingLaw, ensure_scaling
+
 
 class System(object):
     """Atomic structures and tight-binding parameters.
@@ -153,33 +155,138 @@ class System(object):
             l_consist = l_consist and exp_orbit == hop_orbit
         return l_consist
 
-    def get_hop_params(self, atom_1_i, atom_2_i, image_i):
-        """ return parameters dictionary
-		"""
+    def _get_pair(self, ele_1, ele_2):
+        """Get the parameter key for an element pair."""
+        key_list = self.get_param_key()
+        if f"{ele_1}{ele_2}" in key_list:
+            return f"{ele_1}{ele_2}"
+        elif f"{ele_2}{ele_1}" in key_list:
+            return f"{ele_2}{ele_1}"
+        return None
 
-        def get_pair(key_list, ele_1, ele_2):
-            if "{}{}".format(ele_1, ele_2) in key_list:
-                return "{}{}".format(ele_1, ele_2)
-            elif "{}{}".format(ele_2, ele_1) in key_list:
-                return "{}{}".format(ele_2, ele_1)
+    def _is_hopping_key(self, key):
+        """Check if a parameter key is a hopping parameter."""
+        # Hopping parameters start with V_ (e.g., V_sss, V_pps)
+        # Non-hopping keys include: repulsive, e_s, e_p, etc.
+        return key.startswith("V_")
+
+    def get_hop_params(self, atom_1_i, atom_2_i, image_i):
+        """Return hopping parameters for an atom pair.
+
+        Handles both constant parameters (floats) and distance-dependent
+        scaling laws (ScalingLaw objects). Filters out non-hopping parameters
+        like 'repulsive'.
+        """
+        atoms = self.structure.atoms
+        pair = self._get_pair(atoms[atom_1_i].element, atoms[atom_2_i].element)
+        all_params = self.params[pair]
+
+        # Filter to only hopping parameters
+        hop_params = {k: v for k, v in all_params.items() if self._is_hopping_key(k)}
+
+        # Check if any parameter is a ScalingLaw
+        has_scaling = any(isinstance(v, ScalingLaw) for v in hop_params.values())
+
+        if not has_scaling:
+            # Legacy path: use scale_params if available
+            scale_params = self.scale_params.get(pair)
+            if scale_params is None:
+                return hop_params
+            d_0 = scale_params["d_0"]
+            d = self.structure.dist_mat[image_i, atom_1_i, atom_2_i]
+            factor = d_0 / float(d)
+
+            params_scaled = {}
+            for key, hop in hop_params.items():
+                orbit = key.replace("V_", "n_")
+                params_scaled[key] = hop * factor ** scale_params[orbit]
+            return params_scaled
+
+        # New path: evaluate ScalingLaw objects at actual distance
+        d = self.structure.dist_mat[image_i, atom_1_i, atom_2_i]
+        params_scaled = {}
+        for key, value in hop_params.items():
+            if isinstance(value, ScalingLaw):
+                params_scaled[key] = value(d)
             else:
-                return None
+                params_scaled[key] = value
+        return params_scaled
+
+    def get_hop_params_with_derivs(self, atom_1_i, atom_2_i, image_i):
+        """Return hopping parameters and their distance derivatives.
+
+        Returns:
+            params: dict of hopping parameter values
+            dparams_dd: dict of first derivatives dV/dd
+            d2params_dd2: dict of second derivatives d²V/dd²
+        """
+        atoms = self.structure.atoms
+        pair = self._get_pair(atoms[atom_1_i].element, atoms[atom_2_i].element)
+        hop_params = self.params[pair]
+        d = self.structure.dist_mat[image_i, atom_1_i, atom_2_i]
+
+        params = {}
+        dparams_dd = {}
+        d2params_dd2 = {}
+
+        for key, value in hop_params.items():
+            if isinstance(value, ScalingLaw):
+                params[key] = value(d)
+                dparams_dd[key] = value.deriv1(d)
+                d2params_dd2[key] = value.deriv2(d)
+            else:
+                params[key] = value
+                dparams_dd[key] = 0.0
+                d2params_dd2[key] = 0.0
+
+        return params, dparams_dd, d2params_dd2
+
+    def get_repulsive_energy(self, atom_1_i, atom_2_i, image_i):
+        """Get repulsive potential energy for an atom pair.
+
+        Returns:
+            energy: Repulsive potential energy (0 if no repulsive defined)
+        """
+        from .repulsive import RepulsivePotential
 
         atoms = self.structure.atoms
-        pair = get_pair(self.get_param_key(), atoms[atom_1_i].element, atoms[atom_2_i].element)
-        scale_params = self.scale_params[pair]
-        if scale_params is None:
-            return self.params[pair]
-        d_0 = scale_params["d_0"]
-        d = self.structure.dist_mat[image_i, atom_1_i, atom_2_i]
-        factor = d_0 / float(d)
-
-        params_scaled = {}
+        pair = self._get_pair(atoms[atom_1_i].element, atoms[atom_2_i].element)
         hop_params = self.params[pair]
-        for key, hop in list(hop_params.items()):
-            orbit = key.replace("V_", "n_")
-            params_scaled[key] = hop * factor ** scale_params[orbit]
-        return params_scaled
+
+        rep = hop_params.get("repulsive")
+        if rep is None or not isinstance(rep, RepulsivePotential):
+            return 0.0
+
+        d = self.structure.dist_mat[image_i, atom_1_i, atom_2_i]
+        return rep(d)
+
+    def get_repulsive_force(self, atom_1_i, atom_2_i, image_i):
+        """Get repulsive force magnitude for an atom pair.
+
+        Returns:
+            force: -dV_rep/dd (positive = repulsive)
+        """
+        from .repulsive import RepulsivePotential
+
+        atoms = self.structure.atoms
+        pair = self._get_pair(atoms[atom_1_i].element, atoms[atom_2_i].element)
+        hop_params = self.params[pair]
+
+        rep = hop_params.get("repulsive")
+        if rep is None or not isinstance(rep, RepulsivePotential):
+            return 0.0
+
+        d = self.structure.dist_mat[image_i, atom_1_i, atom_2_i]
+        return -rep.deriv1(d)
+
+    def has_distance_dependent_params(self):
+        """Check if any parameters are distance-dependent ScalingLaws."""
+        for key, params in self.params.items():
+            if isinstance(params, dict):
+                for v in params.values():
+                    if isinstance(v, ScalingLaw):
+                        return True
+        return False
 
     def calc_volume(self, atom_i):
         """ calc volume of the tetrahedron 
