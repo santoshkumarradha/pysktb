@@ -74,6 +74,7 @@ eigenvalues = ham.solve_kpath(kpts)
 | | Harrison, PowerLaw, Exponential, GSP scaling | ● |
 | | Repulsive potentials (BornMayer, Morse) | ● |
 | | Atomic forces (Hellmann-Feynman) | ● |
+| | Phonon dispersion and DOS | ● |
 | **Structure** | 1D, 2D, 3D systems | ● |
 | | Beyond nearest-neighbor | ● |
 | | [pymatgen](https://pymatgen.org) integration | ● |
@@ -215,6 +216,38 @@ F = forces.get_forces(n_electrons=2, nk=[10, 10, 1])
 
 See [forces_and_scaling.ipynb](./docs/source/examples/forces_and_scaling.ipynb) for visualizing scaling laws, energy curves, and band structure evolution with distance.
 
+**Phonon Calculations** — Lattice dynamics from tight-binding
+
+<table>
+<tr>
+<td align="center" width="50%">
+<img src="./docs/source/examples/data/phonon_1d_chain.png" height="180"><br>
+<sub><b>1D Monatomic Chain</b><br>Numerical vs analytical ω=2√(K/M)|sin(πq)|</sub>
+</td>
+<td align="center" width="50%">
+<img src="./docs/source/examples/data/phonon_graphene.png" height="180"><br>
+<sub><b>Graphene Phonons</b><br>6 branches along Γ-M-K-Γ</sub>
+</td>
+</tr>
+</table>
+
+```python
+from pysktb.phonon import Phonon
+
+# Phonon calculator from tight-binding Hamiltonian
+phonon = Phonon(ham, masses={"C": 12.011}, n_electrons=2)
+
+# Phonon band structure
+q_path = [[0,0,0], [0.5,0,0], [1/3,1/3,0], [0,0,0]]
+q_points, q_dist, spl = phonon.get_qpath(q_path, nq=50)
+frequencies = phonon.get_phonon_bands(np.array(q_points))
+
+# Phonon DOS
+dos = phonon.get_phonon_dos(omega_range, nq=[20,20,1], sigma=0.5)
+```
+
+See [phonon_calculations.ipynb](./docs/source/examples/phonon_calculations.ipynb) for 1D chain with analytical verification, graphene phonon dispersion, and Van Hove singularities in DOS.
+
 </details>
 
 ## Performance
@@ -237,7 +270,7 @@ See [forces_and_scaling.ipynb](./docs/source/examples/forces_and_scaling.ipynb) 
 | Status | Feature |
 |:------:|---------|
 | ● | Distance-dependent hopping & forces |
-| ◐ | Phonon calculations (dynamical matrix) |
+| ● | Phonon calculations (dynamical matrix) |
 | ◐ | Electron-phonon coupling |
 | ◐ | Complete pymatgen integration |
 | ◐ | Berry phase calculation |
