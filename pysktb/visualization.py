@@ -269,3 +269,169 @@ class OrbitalPlotter:
         ax.set_aspect('equal')
 
         return ax
+
+    # === 3D Isosurface Plotting ===
+
+    def _create_3d_grid(self, extent: float, resolution: int,
+                        center: np.ndarray = None) -> Tuple[np.ndarray, ...]:
+        """Create 3D grid for isosurface plotting."""
+        if center is None:
+            center = np.zeros(3)
+
+        coords = np.linspace(-extent, extent, resolution)
+        X, Y, Z = np.meshgrid(coords, coords, coords, indexing='ij')
+        X = X + center[0]
+        Y = Y + center[1]
+        Z = Z + center[2]
+
+        return X, Y, Z
+
+    def plot_orbital_3d(self, atom_idx: int, orbital: str,
+                        extent: float = 3.0, resolution: int = 40,
+                        isosurface: float = 0.1, alpha: float = 0.6,
+                        ax=None, colors: Tuple[str, str] = ('#e74c3c', '#3498db')
+                        ):
+        """Plot 3D isosurface of atomic orbital.
+
+        Shows positive lobe in one color and negative lobe in another.
+
+        Args:
+            atom_idx: Index of atom
+            orbital: Orbital name
+            extent: Plot half-width in Angstroms
+            resolution: Grid resolution (lower = faster)
+            isosurface: Isosurface value (fraction of max)
+            alpha: Surface transparency
+            ax: Matplotlib 3D axes (creates new if None)
+            colors: (positive_color, negative_color)
+
+        Returns:
+            Matplotlib 3D axes
+        """
+        from mpl_toolkits.mplot3d import Axes3D
+        from skimage import measure
+
+        if ax is None:
+            fig = plt.figure(figsize=(10, 8))
+            ax = fig.add_subplot(111, projection='3d')
+
+        # Get atom position and orbital
+        atom_pos = self.basis.get_atom_position(atom_idx)
+        atomic_orbital = self.basis.get_orbital(atom_idx, orbital)
+
+        # Create grid centered on atom
+        X, Y, Z = self._create_3d_grid(extent, resolution, center=atom_pos)
+
+        # Evaluate orbital
+        X_rel = X - atom_pos[0]
+        Y_rel = Y - atom_pos[1]
+        Z_rel = Z - atom_pos[2]
+        values = atomic_orbital.evaluate(X_rel, Y_rel, Z_rel)
+
+        # Determine isosurface level
+        vmax = np.abs(values).max()
+        level = isosurface * vmax
+
+        # Plot positive isosurface
+        try:
+            verts_pos, faces_pos, _, _ = measure.marching_cubes(
+                values, level, spacing=(2*extent/resolution,)*3
+            )
+            verts_pos = verts_pos - extent + atom_pos
+            ax.plot_trisurf(verts_pos[:, 0], verts_pos[:, 1], faces_pos,
+                           verts_pos[:, 2], color=colors[0], alpha=alpha,
+                           shade=True)
+        except ValueError:
+            pass  # No isosurface at this level
+
+        # Plot negative isosurface
+        try:
+            verts_neg, faces_neg, _, _ = measure.marching_cubes(
+                values, -level, spacing=(2*extent/resolution,)*3
+            )
+            verts_neg = verts_neg - extent + atom_pos
+            ax.plot_trisurf(verts_neg[:, 0], verts_neg[:, 1], faces_neg,
+                           verts_neg[:, 2], color=colors[1], alpha=alpha,
+                           shade=True)
+        except ValueError:
+            pass
+
+        # Mark atom
+        ax.scatter([atom_pos[0]], [atom_pos[1]], [atom_pos[2]],
+                  color='black', s=100, marker='o')
+
+        # Labels
+        ax.set_xlabel('x (Å)')
+        ax.set_ylabel('y (Å)')
+        ax.set_zlabel('z (Å)')
+
+        element = self.structure.atoms[atom_idx].element
+        ax.set_title(f'{element} {orbital} orbital (3D isosurface)')
+
+        return ax
+
+    def plot_orbital_3d_simple(self, atom_idx: int, orbital: str,
+                               extent: float = 3.0, resolution: int = 30,
+                               n_points: int = 1000, ax=None) -> plt.Axes:
+        """Plot 3D orbital using scatter plot (simpler, no skimage needed).
+
+        Args:
+            atom_idx: Index of atom
+            orbital: Orbital name
+            extent: Plot half-width
+            resolution: Grid resolution
+            n_points: Number of scatter points
+            ax: Matplotlib 3D axes
+
+        Returns:
+            Matplotlib 3D axes
+        """
+        if ax is None:
+            fig = plt.figure(figsize=(10, 8))
+            ax = fig.add_subplot(111, projection='3d')
+
+        atom_pos = self.basis.get_atom_position(atom_idx)
+        atomic_orbital = self.basis.get_orbital(atom_idx, orbital)
+
+        # Create grid
+        X, Y, Z = self._create_3d_grid(extent, resolution, center=atom_pos)
+
+        # Evaluate orbital
+        X_rel = X - atom_pos[0]
+        Y_rel = Y - atom_pos[1]
+        Z_rel = Z - atom_pos[2]
+        values = atomic_orbital.evaluate(X_rel, Y_rel, Z_rel)
+
+        # Sample points weighted by |ψ|²
+        prob = np.abs(values) ** 2
+        prob = prob / prob.sum()
+        flat_prob = prob.flatten()
+
+        # Select top points by probability
+        indices = np.argsort(flat_prob)[-n_points:]
+        X_flat, Y_flat, Z_flat = X.flatten(), Y.flatten(), Z.flatten()
+        values_flat = values.flatten()
+
+        x_pts = X_flat[indices]
+        y_pts = Y_flat[indices]
+        z_pts = Z_flat[indices]
+        v_pts = values_flat[indices]
+
+        # Color by sign
+        colors = np.where(v_pts > 0, '#e74c3c', '#3498db')
+        sizes = 50 * np.abs(v_pts) / np.abs(v_pts).max()
+
+        ax.scatter(x_pts, y_pts, z_pts, c=colors, s=sizes, alpha=0.6)
+
+        # Mark atom
+        ax.scatter([atom_pos[0]], [atom_pos[1]], [atom_pos[2]],
+                  color='black', s=150, marker='o')
+
+        ax.set_xlabel('x (Å)')
+        ax.set_ylabel('y (Å)')
+        ax.set_zlabel('z (Å)')
+
+        element = self.structure.atoms[atom_idx].element
+        ax.set_title(f'{element} {orbital} orbital')
+
+        return ax
