@@ -31,6 +31,18 @@ from .repulsive import (
     ZeroPotential,
 )
 
+# Orbital visualization
+from .orbitals import (
+    RadialFunction,
+    SlaterOrbital,
+    HydrogenOrbital,
+    GaussianOrbital,
+    AtomicOrbital,
+    OrbitalBasis,
+    DEFAULT_SLATER_ZETA,
+)
+from .visualization import OrbitalPlotter
+
 __all__ = [
     # Core classes
     "Structure",
@@ -59,5 +71,14 @@ __all__ = [
     "Morse",
     "SplineRepulsive",
     "ZeroPotential",
+    # Orbital visualization
+    "RadialFunction",
+    "SlaterOrbital",
+    "HydrogenOrbital",
+    "GaussianOrbital",
+    "AtomicOrbital",
+    "OrbitalBasis",
+    "OrbitalPlotter",
+    "DEFAULT_SLATER_ZETA",
 ]
 
