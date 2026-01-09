@@ -41,7 +41,16 @@ from .orbitals import (
     OrbitalBasis,
     DEFAULT_SLATER_ZETA,
 )
-from .visualization import OrbitalPlotter
+from .visualization import (
+    OrbitalPlotter,
+    tile_supercell,
+    tile_amplitudes,
+    get_nearest_neighbor_bonds,
+    draw_bonds,
+    draw_pz_lobes,
+    plot_ribbon_edge_state,
+    plot_edge_vs_bulk_comparison,
+)
 
 __all__ = [
     # Core classes
@@ -80,5 +89,13 @@ __all__ = [
     "OrbitalBasis",
     "OrbitalPlotter",
     "DEFAULT_SLATER_ZETA",
+    # Ribbon visualization helpers
+    "tile_supercell",
+    "tile_amplitudes",
+    "get_nearest_neighbor_bonds",
+    "draw_bonds",
+    "draw_pz_lobes",
+    "plot_ribbon_edge_state",
+    "plot_edge_vs_bulk_comparison",
 ]
 

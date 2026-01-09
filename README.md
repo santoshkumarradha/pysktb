@@ -77,6 +77,10 @@ eigenvalues = ham.solve_kpath(kpts)
 | **Structure** | 1D, 2D, 3D systems | ● |
 | | Beyond nearest-neighbor | ● |
 | | [pymatgen](https://pymatgen.org) integration | ● |
+| **Orbital Visualization** | Real-space orbital plots (2D/3D) | ● |
+| | Slater, Gaussian, Hydrogen radial functions | ● |
+| | Edge state wavefunction visualization | ● |
+| | Ribbon superlattice with bonds | ● |
 | **Performance** | [Numba](https://numba.pydata.org) JIT compilation | ● |
 | | k-point parallelization | ● |
 | | Total energy calculations | ● |
@@ -160,6 +164,33 @@ See [greens_dos_example.py](./docs/source/examples/greens_dos_example.py) for co
 
 See [edge_states_example.py](./docs/source/examples/edge_states_example.py) for computing edge spectral functions and visualizing flat-band edge states at E=0.
 
+**Real-Space Orbital Visualization** — Atomic orbitals and edge state wavefunctions
+
+<table>
+<tr>
+<td align="center" width="50%">
+<img src="./docs/source/examples/data/atomic_orbitals_gallery.png" height="200"><br>
+<sub><b>Atomic Orbitals</b><br>s, px, py, pz orbital shapes</sub>
+</td>
+<td align="center" width="50%">
+<img src="./docs/source/examples/data/edge_vs_bulk_states.png" height="200"><br>
+<sub><b>Edge State Localization</b><br>Edge vs bulk state distribution</sub>
+</td>
+</tr>
+<tr>
+<td align="center" width="50%">
+<img src="./docs/source/examples/data/edge_state_superlattice.png" height="180"><br>
+<sub><b>Honeycomb Superlattice</b><br>Edge state with C-C bonds visible</sub>
+</td>
+<td align="center" width="50%">
+<img src="./docs/source/examples/data/pz_orbital_3d.png" height="180"><br>
+<sub><b>3D Orbital</b><br>pz orbital dumbbell shape</sub>
+</td>
+</tr>
+</table>
+
+See [orbital_visualization.ipynb](./docs/source/examples/orbital_visualization.ipynb) for real-space orbital plotting with Slater, Gaussian, and Hydrogen-like radial functions, plus edge state visualization with honeycomb lattice bonds.
+
 **Distance-Dependent Hopping & Forces** — Scaling laws and force calculations
 
 ```python
@@ -214,6 +245,7 @@ See [forces_and_scaling.ipynb](./docs/source/examples/forces_and_scaling.ipynb) 
 | ○ | [ASE](https://wiki.fysik.dtu.dk/ase/) structure interface |
 | ● | Green's function DOS |
 | ● | Topological edge states |
+| ● | Real-space orbital visualization |
 | ○ | Sympy analytical matrix elements |
 | ○ | Low-energy k.p Hamiltonian extraction |
 
