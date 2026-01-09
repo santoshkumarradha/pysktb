@@ -154,8 +154,18 @@ class ForceConstants:
     def _fc_repulsive(self) -> np.ndarray:
         """Analytical repulsive contribution to force constants.
 
-        For pair potential V(d):
-            ∂²V/∂u_α^i ∂u_β^j = V''(d)(∂d/∂u_α^i)(∂d/∂u_β^j) + V'(d)(∂²d/∂u_α^i∂u_β^j)
+        For pair potential V(d), assuming equilibrium (V'(d) ≈ 0 due to
+        balance with band energy), the force constant simplifies to:
+
+            C_αβ(i,j) ≈ -V''(d) * l_α * l_β
+
+        This gives a central-force (radial spring) model where:
+        - Longitudinal modes have proper dispersion from V''
+        - Transverse modes are soft (ω ≈ 0) without angular forces
+
+        Note: The full formula includes a -V'/d term for pre-stress, but this
+        is zero at equilibrium. Including it without band energy balance
+        gives unphysical imaginary transverse frequencies.
 
         Returns:
             Force constants array with image index:
@@ -194,24 +204,16 @@ class ForceConstants:
                     if rep is None:
                         continue
 
-                    V_prime = rep.deriv1(d)
                     V_dprime = rep.deriv2(d)
 
-                    # Build 3x3 force constant block
-                    # ∂d/∂u_α^i = -l_α, ∂d/∂u_α^j = +l_α
-                    # ∂²d/∂u_α^i∂u_β^i = (δ_αβ - l_α l_β)/d
-                    # ∂²d/∂u_α^i∂u_β^j = -(δ_αβ - l_α l_β)/d
-
+                    # Build 3x3 force constant block (central-force approximation)
+                    # C_αβ(i,j) = -V'' * l_α * l_β
+                    # This is the radial spring constant in the bond direction
                     ll = np.outer(l, l)
-                    delta_ll = (np.eye(3) - ll) / d
-
-                    # Off-diagonal block C(i,j,R): force constant for atom j in image R
-                    # ∂²V/∂u_α^i ∂u_β^j = V'' * (-l_α)(+l_β) + V' * (-(δ-ll)/d)
-                    #                    = -V'' * l_α l_β - V' * (δ-ll)/d
-                    fc[image_idx, i, :, j, :] += -V_dprime * ll - V_prime * delta_ll
+                    fc[image_idx, i, :, j, :] += -V_dprime * ll
 
         # Apply acoustic sum rule: self-interaction = negative sum of all others
-        # C(0,0;home) = -Σ_{R≠home or j≠i} C(i,j;R)
+        # C(i,i;home) = -Σ_{R,j ≠ (home,i)} C(i,j;R)
         for i in range(self.n_atoms):
             for alpha in range(3):
                 for beta in range(3):
