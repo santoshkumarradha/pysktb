@@ -70,6 +70,10 @@ eigenvalues = ham.solve_kpath(kpts)
 | | Local DOS (atom/orbital resolved) | ● |
 | | Spectral function A(k,E) | ● |
 | | Topological edge states | ● |
+| **Forces & Dynamics** | Distance-dependent hopping | ● |
+| | Harrison, PowerLaw, Exponential, GSP scaling | ● |
+| | Repulsive potentials (BornMayer, Morse) | ● |
+| | Atomic forces (Hellmann-Feynman) | ● |
 | **Structure** | 1D, 2D, 3D systems | ● |
 | | Beyond nearest-neighbor | ● |
 | | [pymatgen](https://pymatgen.org) integration | ● |
@@ -156,6 +160,30 @@ See [greens_dos_example.py](./docs/source/examples/greens_dos_example.py) for co
 
 See [edge_states_example.py](./docs/source/examples/edge_states_example.py) for computing edge spectral functions and visualizing flat-band edge states at E=0.
 
+**Distance-Dependent Hopping & Forces** — Scaling laws and force calculations
+
+```python
+from pysktb import Harrison, BornMayer, Forces
+
+# Distance-dependent hopping: V(d) = V₀(d₀/d)²
+params = {
+    "C": {"e_s": 0.0},
+    "CC": {
+        "V_sss": Harrison(V0=-5.0, d0=1.42, cutoff=4.0),
+        "repulsive": BornMayer(A=500, B=3.0, cutoff=4.0),
+    }
+}
+
+ham = Hamiltonian(structure, params)
+forces = Forces(ham)
+
+# Compute total energy and forces
+E_total, E_band, E_rep = forces.get_total_energy(n_electrons=2, nk=[10, 10, 1])
+F = forces.get_forces(n_electrons=2, nk=[10, 10, 1])
+```
+
+See [forces_and_scaling.ipynb](./docs/source/examples/forces_and_scaling.ipynb) for visualizing scaling laws, energy curves, and band structure evolution with distance.
+
 </details>
 
 ## Performance
@@ -177,6 +205,9 @@ See [edge_states_example.py](./docs/source/examples/edge_states_example.py) for 
 
 | Status | Feature |
 |:------:|---------|
+| ● | Distance-dependent hopping & forces |
+| ◐ | Phonon calculations (dynamical matrix) |
+| ◐ | Electron-phonon coupling |
 | ◐ | Complete pymatgen integration |
 | ◐ | Berry phase calculation |
 | ○ | Bogoliubov-de-Gennes (BdG) for superconductivity |
