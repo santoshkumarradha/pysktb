@@ -285,7 +285,7 @@ class Forces:
         # Get full hopping matrix and its derivatives
         params_lmn = {"l": l, "m": m, "n": n}
         params_full = {**params, **params_lmn}
-        H_base = get_hop_int(**params_full)
+        H_base = np.array(get_hop_int(**params_full))
 
         # Compute numerical derivative with respect to direction cosines
         eps = 1e-6
@@ -294,9 +294,9 @@ class Forces:
         params_lmn_dm = {"l": l, "m": m + eps, "n": n}
         params_lmn_dn = {"l": l, "m": m, "n": n + eps}
 
-        H_dl = get_hop_int(**{**params, **params_lmn_dl})
-        H_dm = get_hop_int(**{**params, **params_lmn_dm})
-        H_dn = get_hop_int(**{**params, **params_lmn_dn})
+        H_dl = np.array(get_hop_int(**{**params, **params_lmn_dl}))
+        H_dm = np.array(get_hop_int(**{**params, **params_lmn_dm}))
+        H_dn = np.array(get_hop_int(**{**params, **params_lmn_dn}))
 
         dH_dl = (H_dl - H_base) / eps
         dH_dm = (H_dm - H_base) / eps
@@ -309,7 +309,7 @@ class Forces:
                 # Get hopping matrix with unit hopping for this parameter
                 params_unit = {k: (1.0 if k == key else 0.0) for k in params if k.startswith("V_")}
                 params_unit.update(params_lmn)
-                H_unit = get_hop_int(**params_unit)
+                H_unit = np.array(get_hop_int(**params_unit))
                 H_from_dV += dV_dd * dd_dR * H_unit
 
         # Total derivative
@@ -323,7 +323,7 @@ class Forces:
         params_lmn = {"l": l, "m": m, "n": n}
         params_full = {**params, **params_lmn}
         H = get_hop_int(**params_full)
-        return H[orb_idx_1, orb_idx_2]
+        return H[orb_idx_1][orb_idx_2]
 
     def _get_orbital_index(self, atom_i: int, orbit_i: int,
                            element: str, orbit: str) -> int:

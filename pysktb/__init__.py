@@ -52,6 +52,15 @@ from .visualization import (
     plot_edge_vs_bulk_comparison,
 )
 
+# Phonon calculations
+from .phonon import (
+    Phonon,
+    ForceConstants,
+    DynamicalMatrix,
+    ATOMIC_MASSES,
+    eigenvalue_to_frequency,
+)
+
 __all__ = [
     # Core classes
     "Structure",
@@ -97,5 +106,11 @@ __all__ = [
     "draw_pz_lobes",
     "plot_ribbon_edge_state",
     "plot_edge_vs_bulk_comparison",
+    # Phonon calculations
+    "Phonon",
+    "ForceConstants",
+    "DynamicalMatrix",
+    "ATOMIC_MASSES",
+    "eigenvalue_to_frequency",
 ]
 

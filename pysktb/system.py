@@ -222,7 +222,9 @@ class System(object):
         """
         atoms = self.structure.atoms
         pair = self._get_pair(atoms[atom_1_i].element, atoms[atom_2_i].element)
-        hop_params = self.params[pair]
+        all_params = self.params[pair]
+        # Filter to only hopping parameters (exclude 'repulsive', etc.)
+        hop_params = {k: v for k, v in all_params.items() if self._is_hopping_key(k)}
         d = self.structure.dist_mat[image_i, atom_1_i, atom_2_i]
 
         params = {}
