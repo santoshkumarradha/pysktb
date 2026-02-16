@@ -387,5 +387,95 @@ class TestErrorHandling:
             "Error message should mention 'degenerate' or 'zero volume' to identify the issue"
 
 
+# ============================================================================
+# Lattice Preservation Tests
+# ============================================================================
+
+@pytest.mark.skipif(not HAS_ASE, reason="ASE not installed")
+class TestLatticePreservation:
+    """Test preservation of non-orthogonal cell properties during conversion."""
+
+    def test_monoclinic_cell(self):
+        """
+        Test monoclinic cell angle preservation during ASE-to-pysktb conversion.
+
+        Creates an ASE Atoms object with a monoclinic cell (non-90° angles),
+        converts it to a pysktb Structure, and verifies that all lattice
+        parameters (a, b, c, alpha, beta, gamma) are preserved within tolerance.
+
+        This test maps to Acceptance Criterion #3: Non-orthogonal cell preservation.
+
+        Verifies:
+        - structure.lattice.alpha ≈ original_alpha within 1e-6 radians
+        - structure.lattice.beta ≈ original_beta within 1e-6 radians
+        - structure.lattice.gamma ≈ original_gamma within 1e-6 radians
+        - structure.lattice.a, .b, .c are positive and reasonable magnitudes
+        """
+        # Create monoclinic ASE structure with known angles
+        atoms = create_monoclinic_fixture()
+
+        # Compute the expected lattice parameters from the original ASE structure
+        # Extract cell vectors from ASE
+        cell_vectors = atoms.get_cell()[:]
+
+        # Compute original angles using the same formula as Lattice._to_list
+        a_vec = cell_vectors[0]
+        b_vec = cell_vectors[1]
+        c_vec = cell_vectors[2]
+
+        expected_a = np.linalg.norm(a_vec)
+        expected_b = np.linalg.norm(b_vec)
+        expected_c = np.linalg.norm(c_vec)
+
+        # Expected angles from cell geometry
+        expected_alpha = np.arctan2(np.linalg.norm(np.cross(b_vec, c_vec)), np.dot(b_vec, c_vec))
+        expected_beta = np.arctan2(np.linalg.norm(np.cross(c_vec, a_vec)), np.dot(c_vec, a_vec))
+        expected_gamma = np.arctan2(np.linalg.norm(np.cross(a_vec, b_vec)), np.dot(a_vec, b_vec))
+
+        # Convert to pysktb Structure
+        structure = ase_atoms_to_pysktb_structure(atoms)
+
+        # Test 1: Verify all lattice constants are positive and reasonable
+        assert structure.lattice.a > 0, "Lattice constant a must be positive"
+        assert structure.lattice.b > 0, "Lattice constant b must be positive"
+        assert structure.lattice.c > 0, "Lattice constant c must be positive"
+
+        # Verify magnitudes are reasonable (in typical range for atomic structures, 1-20 Å)
+        assert 0.5 < structure.lattice.a < 20.0, \
+            f"Lattice a={structure.lattice.a} outside reasonable range (0.5-20 Å)"
+        assert 0.5 < structure.lattice.b < 20.0, \
+            f"Lattice b={structure.lattice.b} outside reasonable range (0.5-20 Å)"
+        assert 0.5 < structure.lattice.c < 20.0, \
+            f"Lattice c={structure.lattice.c} outside reasonable range (0.5-20 Å)"
+
+        # Test 2: Verify angles are preserved within 1e-6 radian tolerance
+        # Note: The conversion process normalizes by the first vector, so angles should be preserved exactly
+        tolerance = 1e-6  # radians
+
+        np.testing.assert_allclose(
+            structure.lattice.alpha,
+            expected_alpha,
+            rtol=0,
+            atol=tolerance,
+            err_msg=f"Alpha angle not preserved: expected {expected_alpha}, got {structure.lattice.alpha}"
+        )
+
+        np.testing.assert_allclose(
+            structure.lattice.beta,
+            expected_beta,
+            rtol=0,
+            atol=tolerance,
+            err_msg=f"Beta angle not preserved: expected {expected_beta}, got {structure.lattice.beta}"
+        )
+
+        np.testing.assert_allclose(
+            structure.lattice.gamma,
+            expected_gamma,
+            rtol=0,
+            atol=tolerance,
+            err_msg=f"Gamma angle not preserved: expected {expected_gamma}, got {structure.lattice.gamma}"
+        )
+
+
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])
