@@ -130,13 +130,9 @@ def ase_atoms_to_pysktb_structure(
         if rank < 3:
             # Less than 3 linearly independent vectors = degenerate cell
             raise ValueError("Structure has degenerate or zero volume cell")
-    except (np.linalg.LinAlgError, ValueError):
-        # If matrix_rank fails or we already raised, check what happened
-        pass
-
-    # Additional check: cell should not be all zeros
-    if np.allclose(cell, 0.0):
-        raise ValueError("Structure has missing cell information")
+    except np.linalg.LinAlgError:
+        # If matrix_rank fails due to linalg error (rare), treat as degenerate
+        raise ValueError("Structure has degenerate or zero volume cell")
 
     # Validate non-zero volume
     try:
