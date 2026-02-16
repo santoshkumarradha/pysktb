@@ -25,6 +25,8 @@ exceptions are raised with correct error messages for:
 
 import pytest
 import numpy as np
+import unittest.mock
+import sys
 
 try:
     import ase
@@ -385,6 +387,107 @@ class TestErrorHandling:
         error_msg = str(excinfo.value).lower()
         assert 'degenerate' in error_msg or 'zero volume' in error_msg, \
             "Error message should mention 'degenerate' or 'zero volume' to identify the issue"
+
+
+# ============================================================================
+# Module Export Tests
+# ============================================================================
+
+class TestModuleExports:
+    """Test that ase_atoms_to_pysktb_structure is properly exported and available."""
+
+    def test_export_in_init(self):
+        """
+        Test that ase_atoms_to_pysktb_structure is exported in pysktb.__all__.
+
+        Verifies acceptance criteria AC #16 and AC #17: The function should be
+        accessible via 'from pysktb import ase_atoms_to_pysktb_structure' and
+        should be listed in pysktb.__all__.
+        """
+        # Import pysktb to check its exports
+        import pysktb
+
+        # Verify function is in __all__ list
+        assert 'ase_atoms_to_pysktb_structure' in pysktb.__all__, \
+            "ase_atoms_to_pysktb_structure should be in pysktb.__all__"
+
+        # Verify function can be imported from main package
+        assert hasattr(pysktb, 'ase_atoms_to_pysktb_structure'), \
+            "ase_atoms_to_pysktb_structure should be importable from pysktb"
+
+        # Verify the imported function is callable
+        assert callable(pysktb.ase_atoms_to_pysktb_structure), \
+            "ase_atoms_to_pysktb_structure should be callable"
+
+    def test_missing_ase_import(self):
+        """
+        Test that a helpful ImportError is raised when ASE is not installed.
+
+        Verifies acceptance criterion AC #18: When ASE is not available, calling
+        ase_atoms_to_pysktb_structure should raise ImportError with a message
+        suggesting 'pip install ase'.
+
+        This test verifies the fallback stub function behavior by mocking the
+        import of the ase_atoms_to_pysktb_structure function at the interfaces
+        level to fail, ensuring pysktb/__init__.py uses the fallback stub.
+        """
+        import importlib
+
+        # Store original modules and state
+        original_pysktb = sys.modules.get('pysktb')
+        original_interfaces = sys.modules.get('pysktb.interfaces')
+        original_interfaces_ase = sys.modules.get('pysktb.interfaces.ase')
+
+        try:
+            # Remove pysktb modules to allow fresh reimport
+            for key in list(sys.modules.keys()):
+                if key.startswith('pysktb'):
+                    del sys.modules[key]
+
+            # Patch the import of pysktb.interfaces.ase to fail
+            with unittest.mock.patch.dict('sys.modules', {'pysktb.interfaces.ase': None}):
+                # Mock the __import__ to fail for pysktb.interfaces.ase
+                import builtins
+                original_import = builtins.__import__
+
+                def mock_import(name, *args, **kwargs):
+                    if name == 'pysktb.interfaces.ase' or (name == 'ase' and args and args[0] == 'pysktb.interfaces.ase'):
+                        raise ImportError("No module named 'pysktb.interfaces.ase'")
+                    return original_import(name, *args, **kwargs)
+
+                with unittest.mock.patch('builtins.__import__', side_effect=mock_import):
+                    # Now import pysktb fresh - this should trigger the except block
+                    # and use the fallback stub function
+                    import pysktb
+
+                    # Call the function to verify it raises the helpful error
+                    with pytest.raises(ImportError) as excinfo:
+                        pysktb.ase_atoms_to_pysktb_structure()
+
+                    # Verify error message contains helpful guidance
+                    error_msg = str(excinfo.value)
+                    assert 'pip install ase' in error_msg, \
+                        f"Error message should suggest 'pip install ase', got: {error_msg}"
+
+        finally:
+            # Cleanup and restore
+            for key in list(sys.modules.keys()):
+                if key.startswith('pysktb'):
+                    del sys.modules[key]
+
+            if original_pysktb is not None:
+                sys.modules['pysktb'] = original_pysktb
+            if original_interfaces is not None:
+                sys.modules['pysktb.interfaces'] = original_interfaces
+            if original_interfaces_ase is not None:
+                sys.modules['pysktb.interfaces.ase'] = original_interfaces_ase
+
+            # Reimport pysktb to restore normal state
+            try:
+                import pysktb
+                importlib.reload(pysktb)
+            except:
+                pass
 
 
 if __name__ == '__main__':
