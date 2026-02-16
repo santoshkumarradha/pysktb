@@ -387,5 +387,81 @@ class TestErrorHandling:
             "Error message should mention 'degenerate' or 'zero volume' to identify the issue"
 
 
+# ============================================================================
+# Multi-Element Structure Conversion Test
+# ============================================================================
+
+@pytest.mark.skipif(not HAS_ASE, reason="ASE not installed")
+def test_multi_element_structure():
+    """
+    Test conversion of multi-element structures (GaAs example).
+
+    This test verifies that the ASE-to-pysktb conversion correctly handles
+    structures with multiple different elements, where each element can have
+    its own orbital definition in the orbital_dict.
+
+    Verifies acceptance criteria AC #5:
+    - Creates GaAs ASE Atoms (2 atoms, zinc-blende)
+    - Converts with orbital_dict={'Ga': ['s', 'p'], 'As': ['s', 'p']}
+    - Verifies structure.atoms[0].element in ['Ga', 'As']
+    - Verifies structure.atoms[1].element in ['Ga', 'As']
+    - Verifies len(structure.get_elements()) == 2
+    - Verifies both 'Ga' and 'As' are in structure.get_elements()
+    """
+    # Create GaAs structure using fixture helper
+    atoms = create_gaas_fixture()
+
+    # Define orbital dictionary with per-element assignments
+    # Note: p orbital should be broken into px, py, pz
+    orbital_dict = {
+        'Ga': ['s', 'px', 'py', 'pz'],  # Ga gets s and p orbitals
+        'As': ['s', 'px', 'py', 'pz']   # As gets s and p orbitals
+    }
+
+    # Define bond cutoff distances for GaAs
+    # GaAs nearest-neighbor distance is ~2.45 Å for zinc-blende structure
+    bond_cutoff_dict = {
+        'GaAs': {'NN': 3.0},  # Cutoff for Ga-As bonds
+        'GaGa': {'NN': 4.0},  # Cutoff for Ga-Ga bonds
+        'AsAs': {'NN': 4.0}   # Cutoff for As-As bonds
+    }
+
+    # Convert to pysktb Structure
+    structure = ase_atoms_to_pysktb_structure(
+        atoms,
+        orbital_dict=orbital_dict,
+        bond_cutoff_dict=bond_cutoff_dict
+    )
+
+    # Verify structure has 2 atoms
+    assert len(structure.atoms) == 2, "Structure should have 2 atoms"
+
+    # Verify both atoms have valid elements
+    assert structure.atoms[0].element in ['Ga', 'As'], \
+        f"First atom element {structure.atoms[0].element} must be Ga or As"
+    assert structure.atoms[1].element in ['Ga', 'As'], \
+        f"Second atom element {structure.atoms[1].element} must be Ga or As"
+
+    # Verify get_elements() returns exactly 2 unique elements
+    elements = structure.get_elements()
+    assert len(elements) == 2, \
+        f"get_elements() should return 2 elements, got {len(elements)}: {elements}"
+
+    # Verify both Ga and As are in the elements list
+    assert 'Ga' in elements, "Gallium (Ga) must be in elements list"
+    assert 'As' in elements, "Arsenic (As) must be in elements list"
+
+    # Verify orbital assignments are correct for each atom
+    for i, atom in enumerate(structure.atoms):
+        if atom.element == 'Ga':
+            assert atom.orbitals is not None, f"Atom {i} (Ga) should have orbitals assigned"
+            assert set(atom.orbitals) == {'s', 'px', 'py', 'pz'}, \
+                f"Atom {i} (Ga) should have s, px, py, pz orbitals, got {atom.orbitals}"
+        elif atom.element == 'As':
+            assert atom.orbitals is not None, f"Atom {i} (As) should have orbitals assigned"
+            assert set(atom.orbitals) == {'s', 'px', 'py', 'pz'}, \
+                f"Atom {i} (As) should have s, px, py, pz orbitals, got {atom.orbitals}"
+
+
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])
