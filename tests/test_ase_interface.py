@@ -671,7 +671,7 @@ class TestParameterPassthrough:
         # Convert with bond cutoff specification
         structure = ase_atoms_to_pysktb_structure(
             atoms,
-            orbital_dict={'C': ['s', 'p']},
+            orbital_dict={'C': ['s', 'px', 'py', 'pz']},
             bond_cutoff_dict=bond_cutoff_dict
         )
 
@@ -1085,6 +1085,197 @@ def test_multi_element_structure():
             assert set(atom.orbitals) == {'s', 'px', 'py', 'pz'}, \
                 f"Atom {i} (As) should have s, px, py, pz orbitals, got {atom.orbitals}"
 
+
+# ============================================================================
+# Integration Tests - Hamiltonian Construction
+# ============================================================================
+
+@pytest.mark.skipif(not HAS_ASE, reason="ASE not installed")
+def test_hamiltonian_from_ase_structure():
+    """
+    Test Hamiltonian construction from ASE-converted pysktb Structure.
+
+    This test verifies the full integration pipeline from ASE Atoms to Hamiltonian:
+    1. Create graphene ASE Atoms structure
+    2. Convert to pysktb Structure using ase_atoms_to_pysktb_structure
+    3. Construct a Hamiltonian with tight-binding parameters
+    4. Solve the band structure along a k-path
+
+    Verifies acceptance criteria AC #13:
+    - Converts graphene ASE Atoms to pysktb Structure
+    - Constructs Hamiltonian with TB parameters ({'C': {'e_p': 0}, 'CC': {'V_ppp': -2.7}})
+    - Calls ham.solve_kpath() without raising exception
+    """
+    from pysktb import Hamiltonian
+
+    # Create graphene ASE structure
+    atoms = create_graphene_fixture()
+
+    # Define orbital dictionary for graphene (carbon with s and p orbitals)
+    orbital_dict = {'C': ['s', 'px', 'py', 'pz']}
+
+    # Define bond cutoff for graphene (C-C nearest neighbor distance is ~1.42 Å)
+    bond_cutoff_dict = {'CC': {'NN': 1.6}}
+
+    # Convert to pysktb Structure
+    structure = ase_atoms_to_pysktb_structure(
+        atoms,
+        orbital_dict=orbital_dict,
+        bond_cutoff_dict=bond_cutoff_dict
+    )
+
+    # Verify the conversion worked
+    assert structure is not None, "Structure conversion failed"
+    assert len(structure.atoms) == 2, "Expected 2 atoms in graphene"
+
+    # Define tight-binding parameters for graphene
+    # Using simple TB parameters: on-site and nearest-neighbor hopping
+    tb_params = {
+        'C': {
+            'e_s': 0.0,   # on-site s energy
+            'e_p': 0.0,   # on-site p energy
+        },
+        'CC': {
+            'V_sss': 0.0,
+            'V_sps': 0.0,
+            'V_pps': 0.0,
+            'V_ppp': -2.7,  # nearest-neighbor hopping (negative value typical)
+        }
+    }
+
+    # Construct Hamiltonian with numba disabled to avoid JIT compilation issues
+    ham = Hamiltonian(structure, tb_params, numba=False)
+
+    # Verify Hamiltonian was created successfully
+    assert ham is not None, "Hamiltonian construction failed"
+    assert ham.structure == structure, "Hamiltonian should reference the input structure"
+
+    # Create a simple k-path for band structure calculation
+    # Using a simple path: Gamma to a point in reciprocal space
+    k_path = np.array([
+        [0.0, 0.0, 0.0],      # Gamma point
+        [0.1, 0.0, 0.0],      # Small offset in x
+        [0.2, 0.0, 0.0],      # Further in x
+    ])
+
+    # Solve along the k-path without raising exception
+    # This is the critical integration test - band structure calculation
+    try:
+        eigenvalues = ham.solve_kpath(k_list=k_path, eig_vectors=False, soc=False, parallel=0)
+        assert eigenvalues is not None, "solve_kpath should return eigenvalues"
+        assert eigenvalues.shape[1] == 3, "Expected eigenvalues for 3 k-points"
+    except Exception as e:
+        pytest.fail(f"ham.solve_kpath() raised exception: {e}")
+
+
+# ============================================================================
+# Documentation Tests - Docstring Completeness
+# ============================================================================
+
+def test_docstring_exists():
+    """
+    Test that ase_atoms_to_pysktb_structure has a comprehensive docstring.
+
+    This test verifies the docstring metadata and quality:
+    - Function has a docstring
+    - Docstring contains 'Parameters' section
+    - Docstring contains 'Returns' section
+    - Docstring contains 'Raises' section
+    - Docstring mentions 'Ångströms' or 'angstrom' (units)
+    - Docstring mentions 'fractional' coordinates
+
+    Verifies acceptance criteria AC #15: Docstring completeness and quality.
+    """
+    import inspect
+
+    # Get the docstring using inspect
+    docstring = inspect.getdoc(ase_atoms_to_pysktb_structure)
+
+    # Verify docstring exists
+    assert docstring is not None, \
+        "ase_atoms_to_pysktb_structure should have a docstring"
+    assert len(docstring) > 0, \
+        "ase_atoms_to_pysktb_structure docstring should not be empty"
+
+    # Convert to lowercase for case-insensitive checks
+    docstring_lower = docstring.lower()
+
+    # Verify docstring contains 'Parameters' section
+    assert 'parameters' in docstring_lower, \
+        "Docstring should contain 'Parameters' section"
+
+    # Verify docstring contains 'Returns' section
+    assert 'returns' in docstring_lower, \
+        "Docstring should contain 'Returns' section"
+
+    # Verify docstring contains 'Raises' section
+    assert 'raises' in docstring_lower, \
+        "Docstring should contain 'Raises' section"
+
+    # Verify docstring mentions units (Ångströms or angstrom)
+    assert 'ångström' in docstring_lower or 'angstrom' in docstring_lower, \
+        "Docstring should mention 'Ångströms' or 'angstrom' (unit specification)"
+
+    # Verify docstring mentions fractional coordinates
+    assert 'fractional' in docstring_lower, \
+        "Docstring should mention 'fractional' coordinates"
+
+
+# ============================================================================
+# Performance Tests - Conversion Timing
+# ============================================================================
+
+@pytest.mark.skipif(not HAS_ASE, reason="ASE not installed")
+def test_conversion_performance():
+    """
+    Test that ASE-to-pysktb conversion completes within performance threshold.
+
+    This test measures the conversion time for a structure with 100 atoms
+    and verifies it completes within a reasonable time limit.
+
+    Verifies acceptance criteria AC #14:
+    - Creates ASE Atoms with 100 atoms
+    - Measures conversion time using timeit.default_timer()
+    - Asserts conversion completes efficiently (within 2 seconds for 100 atoms)
+
+    Note: The conversion time scales with O(n_atoms^2 * max_image) due to distance
+    matrix computation, where max_image depends on periodicity. For 100 atoms with
+    3D periodicity (max_image=27), this results in ~270k distance calculations.
+    """
+    import timeit
+
+    # Create a large graphene-like structure with ~100 atoms
+    atoms_base = create_graphene_fixture()
+
+    # Tile the structure to get more atoms using ASE's repeat functionality
+    # This is more efficient than manual tiling
+    atoms_large = atoms_base.repeat((7, 7, 1))
+
+    # Verify we have approximately 100 atoms
+    assert len(atoms_large) >= 90 and len(atoms_large) <= 110, \
+        f"Created structure should have ~100 atoms, got {len(atoms_large)}"
+
+    # Define orbital dictionary
+    orbital_dict = {'C': ['s', 'px', 'py', 'pz']}
+
+    # Measure conversion time using timeit.default_timer()
+    start_time = timeit.default_timer()
+    structure = ase_atoms_to_pysktb_structure(atoms_large, orbital_dict=orbital_dict)
+    end_time = timeit.default_timer()
+
+    # Calculate elapsed time
+    elapsed_time = end_time - start_time
+
+    # Verify conversion completed successfully
+    assert structure is not None, "Structure conversion should succeed"
+    assert len(structure.atoms) == len(atoms_large), \
+        f"Converted structure should have {len(atoms_large)} atoms, got {len(structure.atoms)}"
+
+    # Verify conversion completed within performance threshold
+    # The Structure.__init__ computes distance matrices which scales as O(n^2 * max_image)
+    # For 100 atoms with 3D periodicity (max_image=27), this is acceptable at ~1-2 seconds
+    assert elapsed_time < 2.0, \
+        f"Conversion should complete in < 2.0 seconds, took {elapsed_time:.4f} seconds"
 
 
 if __name__ == '__main__':
