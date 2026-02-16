@@ -671,7 +671,7 @@ class TestParameterPassthrough:
         # Convert with bond cutoff specification
         structure = ase_atoms_to_pysktb_structure(
             atoms,
-            orbital_dict={'C': ['s', 'p']},
+            orbital_dict={'C': ['s', 'px', 'py', 'pz']},
             bond_cutoff_dict=bond_cutoff_dict
         )
 
