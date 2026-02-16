@@ -387,5 +387,94 @@ class TestErrorHandling:
             "Error message should mention 'degenerate' or 'zero volume' to identify the issue"
 
 
+# ============================================================================
+# Periodicity and PBC Tests
+# ============================================================================
+
+@pytest.mark.skipif(not HAS_ASE, reason="ASE not installed")
+def test_periodicity_conversion():
+    """
+    Test periodicity conversion from ASE pbc to pysktb Structure.
+
+    This test verifies that ASE's periodic boundary conditions (pbc) are
+    correctly mapped to pysktb's periodicity attribute, and that max_image
+    is correctly computed based on the periodicity pattern.
+
+    The formula for max_image is: max_image = 3^sum(periodicity)
+    - For quasi-2D [T,T,F]: sum=2, max_image = 3^2 = 9
+    - For cluster [F,F,F]: sum=0, max_image = 3^0 = 1
+    - For 3D [T,T,T]: sum=3, max_image = 3^3 = 27
+
+    Verifies acceptance criteria:
+    - AC #4: Periodicity is correctly mapped from ASE pbc to pysktb
+    - AC #5: max_image is correctly computed for different periodicity patterns
+    """
+    # ========== Test 1: Quasi-2D structure (quasi-2D pbc=[T,T,F]) ==========
+    # Create a simple cubic structure
+    atoms_2d = Atoms('Si', positions=[[0, 0, 0]],
+                     cell=[[3.0, 0, 0], [0, 3.0, 0], [0, 0, 3.0]],
+                     pbc=[True, True, False])
+
+    # Convert to pysktb Structure with orbital and bond information
+    orbital_dict = {'Si': ['s', 'px', 'py', 'pz']}
+    bond_dict = {'SiSi': {'NN': 2.5}}
+    structure_2d = ase_atoms_to_pysktb_structure(
+        atoms_2d,
+        orbital_dict=orbital_dict,
+        bond_cutoff_dict=bond_dict
+    )
+
+    # Verify periodicity is correctly mapped
+    assert structure_2d.periodicity == [True, True, False], \
+        f"Expected periodicity [True, True, False], got {structure_2d.periodicity}"
+
+    # Verify max_image is correctly computed (3^2 = 9 for quasi-2D)
+    assert structure_2d.max_image == 9, \
+        f"Expected max_image=9 for quasi-2D, got {structure_2d.max_image}"
+
+    # ========== Test 2: Cluster structure (non-periodic pbc=[F,F,F]) ==========
+    # Create a cluster with no periodicity
+    atoms_cluster = Atoms('Si', positions=[[0, 0, 0]],
+                          cell=[[3.0, 0, 0], [0, 3.0, 0], [0, 0, 3.0]],
+                          pbc=[False, False, False])
+
+    # Convert to pysktb Structure with orbital and bond information
+    structure_cluster = ase_atoms_to_pysktb_structure(
+        atoms_cluster,
+        orbital_dict=orbital_dict,
+        bond_cutoff_dict=bond_dict
+    )
+
+    # Verify periodicity is correctly mapped
+    assert structure_cluster.periodicity == [False, False, False], \
+        f"Expected periodicity [False, False, False], got {structure_cluster.periodicity}"
+
+    # Verify max_image is correctly computed (3^0 = 1 for non-periodic)
+    assert structure_cluster.max_image == 1, \
+        f"Expected max_image=1 for cluster, got {structure_cluster.max_image}"
+
+    # ========== Test 3: Explicit periodicity override ==========
+    # Create an ASE structure with pbc=[T,T,T]
+    atoms_3d = Atoms('Si', positions=[[0, 0, 0]],
+                     cell=[[3.0, 0, 0], [0, 3.0, 0], [0, 0, 3.0]],
+                     pbc=[True, True, True])
+
+    # Convert with explicit periodicity override to quasi-2D
+    structure_override = ase_atoms_to_pysktb_structure(
+        atoms_3d,
+        orbital_dict=orbital_dict,
+        bond_cutoff_dict=bond_dict,
+        periodicity=[True, True, False]  # Override default pbc=[T,T,T]
+    )
+
+    # Verify the explicit periodicity override was applied
+    assert structure_override.periodicity == [True, True, False], \
+        f"Expected periodicity [True, True, False] from override, got {structure_override.periodicity}"
+
+    # Verify max_image reflects the overridden periodicity
+    assert structure_override.max_image == 9, \
+        f"Expected max_image=9 with overridden periodicity, got {structure_override.max_image}"
+
+
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])
