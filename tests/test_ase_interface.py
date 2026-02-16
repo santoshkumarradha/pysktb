@@ -387,5 +387,198 @@ class TestErrorHandling:
             "Error message should mention 'degenerate' or 'zero volume' to identify the issue"
 
 
+# ============================================================================
+# Parameter Passthrough and Default Handling Tests
+# ============================================================================
+
+@pytest.mark.skipif(not HAS_ASE, reason="ASE not installed")
+class TestParameterPassthrough:
+    """Test parameter passthrough and default handling in ASE conversion."""
+
+    def test_bond_cutoff_passthrough(self):
+        """
+        Test that bond_cutoff_dict is correctly passed through and bond_mat is computed.
+
+        Verifies acceptance criterion AC #10: Structure.bond_cut should contain the
+        passed bond_cutoff_dict, and structure.bond_mat should be computed and non-empty.
+        """
+        # Create graphene ASE structure
+        atoms = create_graphene_fixture()
+
+        # Define bond cutoff dictionary
+        bond_cutoff_dict = {'CC': {'NN': 1.6}}
+
+        # Convert with bond cutoff specification
+        structure = ase_atoms_to_pysktb_structure(
+            atoms,
+            orbital_dict={'C': ['s', 'px', 'py', 'pz']},
+            bond_cutoff_dict=bond_cutoff_dict
+        )
+
+        # Verify bond_cutoff_dict is stored in structure.bond_cut
+        assert structure.bond_cut == bond_cutoff_dict, \
+            f"structure.bond_cut should equal {bond_cutoff_dict}, got {structure.bond_cut}"
+
+        # Verify bond_mat exists and is non-empty
+        assert structure.bond_mat is not None, "structure.bond_mat should not be None"
+        assert structure.bond_mat.size > 0, "structure.bond_mat should be non-empty"
+
+    def test_default_parameters(self):
+        """
+        Test default parameter handling when optional parameters are None.
+
+        Verifies acceptance criterion AC #11: When periodicity=None, numba=True, name=None,
+        the structure should have:
+        - periodicity inferred from ASE pbc (True for all 3 dimensions)
+        - name defaults to 'system'
+        - numba should be True
+        """
+        # Create simple cubic ASE structure with all pbc=True
+        atoms = create_simple_cubic_fixture()
+        assert all(atoms.pbc), "Fixture should have all pbc=True"
+
+        # Convert with None for optional parameters
+        structure = ase_atoms_to_pysktb_structure(
+            atoms,
+            orbital_dict={'Fe': ['s']},
+            bond_cutoff_dict={'FeFe': {'NN': 3.0}},
+            periodicity=None,
+            numba=True,
+            name=None
+        )
+
+        # Verify periodicity is inferred from ASE pbc
+        assert structure.periodicity == [True, True, True], \
+            f"structure.periodicity should be [True, True, True], got {structure.periodicity}"
+
+        # Verify name defaults to 'system'
+        assert structure.name == 'system', \
+            f"structure.name should be 'system', got {structure.name}"
+
+        # Verify numba flag is True
+        assert structure.numba is True, \
+            f"structure.numba should be True, got {structure.numba}"
+
+    def test_fractional_wrapping(self):
+        """
+        Test that fractional coordinates are wrapped to [0, 1) range.
+
+        Verifies acceptance criterion AC #12: All fractional coordinates in
+        structure.atoms should be within [0, 1) after conversion.
+        """
+        # Create a simple structure but manually shift some atoms outside [0, 1)
+        a = 3.0
+        cell = np.array([
+            [a, 0, 0],
+            [0, a, 0],
+            [0, 0, a]
+        ])
+
+        # Positions in fractional coordinates (some outside [0, 1))
+        # ASE Atoms() expects Cartesian coordinates, so we need to convert
+        fractional_positions = np.array([
+            [0.2, 0.3, 0.4],    # Normal position
+            [1.2, 0.5, 0.6],    # x > 1, should wrap to 0.2
+            [0.8, 1.1, 0.9],    # y > 1, should wrap to 0.1
+            [-0.3, 0.4, 1.2],   # x < 0, y normal, z > 1
+        ])
+
+        # Convert fractional to Cartesian for ASE
+        cartesian_positions = np.dot(fractional_positions, cell)
+
+        # Create ASE Atoms object
+        atoms = Atoms('Fe4', positions=cartesian_positions, cell=cell, pbc=True)
+
+        # Convert to pysktb structure
+        structure = ase_atoms_to_pysktb_structure(
+            atoms,
+            orbital_dict={'Fe': ['s']},
+            bond_cutoff_dict={'FeFe': {'NN': 3.0}}
+        )
+
+        # Verify all fractional coordinates are in [0, 1)
+        for i, atom in enumerate(structure.atoms):
+            pos = atom.pos
+            for j, coord in enumerate(pos):
+                assert 0.0 <= coord < 1.0, \
+                    f"Atom {i}, coordinate {j}: position {coord} not in [0, 1)"
+
+
+# ============================================================================
+# Multi-Element Structure Conversion Test
+# ============================================================================
+
+@pytest.mark.skipif(not HAS_ASE, reason="ASE not installed")
+def test_multi_element_structure():
+    """
+    Test conversion of multi-element structures (GaAs example).
+
+    This test verifies that the ASE-to-pysktb conversion correctly handles
+    structures with multiple different elements, where each element can have
+    its own orbital definition in the orbital_dict.
+
+    Verifies acceptance criteria AC #5:
+    - Creates GaAs ASE Atoms (2 atoms, zinc-blende)
+    - Converts with orbital_dict={'Ga': ['s', 'p'], 'As': ['s', 'p']}
+    - Verifies structure.atoms[0].element in ['Ga', 'As']
+    - Verifies structure.atoms[1].element in ['Ga', 'As']
+    - Verifies len(structure.get_elements()) == 2
+    - Verifies both 'Ga' and 'As' are in structure.get_elements()
+    """
+    # Create GaAs structure using fixture helper
+    atoms = create_gaas_fixture()
+
+    # Define orbital dictionary with per-element assignments
+    # Note: p orbital should be broken into px, py, pz
+    orbital_dict = {
+        'Ga': ['s', 'px', 'py', 'pz'],  # Ga gets s and p orbitals
+        'As': ['s', 'px', 'py', 'pz']   # As gets s and p orbitals
+    }
+
+    # Define bond cutoff distances for GaAs
+    # GaAs nearest-neighbor distance is ~2.45 Å for zinc-blende structure
+    bond_cutoff_dict = {
+        'GaAs': {'NN': 3.0},  # Cutoff for Ga-As bonds
+        'GaGa': {'NN': 4.0},  # Cutoff for Ga-Ga bonds
+        'AsAs': {'NN': 4.0}   # Cutoff for As-As bonds
+    }
+
+    # Convert to pysktb Structure
+    structure = ase_atoms_to_pysktb_structure(
+        atoms,
+        orbital_dict=orbital_dict,
+        bond_cutoff_dict=bond_cutoff_dict
+    )
+
+    # Verify structure has 2 atoms
+    assert len(structure.atoms) == 2, "Structure should have 2 atoms"
+
+    # Verify both atoms have valid elements
+    assert structure.atoms[0].element in ['Ga', 'As'], \
+        f"First atom element {structure.atoms[0].element} must be Ga or As"
+    assert structure.atoms[1].element in ['Ga', 'As'], \
+        f"Second atom element {structure.atoms[1].element} must be Ga or As"
+
+    # Verify get_elements() returns exactly 2 unique elements
+    elements = structure.get_elements()
+    assert len(elements) == 2, \
+        f"get_elements() should return 2 elements, got {len(elements)}: {elements}"
+
+    # Verify both Ga and As are in the elements list
+    assert 'Ga' in elements, "Gallium (Ga) must be in elements list"
+    assert 'As' in elements, "Arsenic (As) must be in elements list"
+
+    # Verify orbital assignments are correct for each atom
+    for i, atom in enumerate(structure.atoms):
+        if atom.element == 'Ga':
+            assert atom.orbitals is not None, f"Atom {i} (Ga) should have orbitals assigned"
+            assert set(atom.orbitals) == {'s', 'px', 'py', 'pz'}, \
+                f"Atom {i} (Ga) should have s, px, py, pz orbitals, got {atom.orbitals}"
+        elif atom.element == 'As':
+            assert atom.orbitals is not None, f"Atom {i} (As) should have orbitals assigned"
+            assert set(atom.orbitals) == {'s', 'px', 'py', 'pz'}, \
+                f"Atom {i} (As) should have s, px, py, pz orbitals, got {atom.orbitals}"
+
+
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])
