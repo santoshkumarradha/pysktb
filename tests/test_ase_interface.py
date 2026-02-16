@@ -838,6 +838,254 @@ class TestModuleExports:
         # Restore the original pysktb after the mock
         importlib.reload(pysktb)
 
+# Lattice Preservation Tests
+# ============================================================================
+
+@pytest.mark.skipif(not HAS_ASE, reason="ASE not installed")
+class TestLatticePreservation:
+    """Test preservation of non-orthogonal cell properties during conversion."""
+
+    def test_monoclinic_cell(self):
+        """
+        Test monoclinic cell angle preservation during ASE-to-pysktb conversion.
+
+        Creates an ASE Atoms object with a monoclinic cell (non-90° angles),
+        converts it to a pysktb Structure, and verifies that all lattice
+        parameters (a, b, c, alpha, beta, gamma) are preserved within tolerance.
+
+        This test maps to Acceptance Criterion #3: Non-orthogonal cell preservation.
+
+        Verifies:
+        - structure.lattice.alpha ≈ original_alpha within 1e-6 radians
+        - structure.lattice.beta ≈ original_beta within 1e-6 radians
+        - structure.lattice.gamma ≈ original_gamma within 1e-6 radians
+        - structure.lattice.a, .b, .c are positive and reasonable magnitudes
+        """
+        # Create monoclinic ASE structure with known angles
+        atoms = create_monoclinic_fixture()
+
+        # Compute the expected lattice parameters from the original ASE structure
+        # Extract cell vectors from ASE
+        cell_vectors = atoms.get_cell()[:]
+
+        # Compute original angles using the same formula as Lattice._to_list
+        a_vec = cell_vectors[0]
+        b_vec = cell_vectors[1]
+        c_vec = cell_vectors[2]
+
+        expected_a = np.linalg.norm(a_vec)
+        expected_b = np.linalg.norm(b_vec)
+        expected_c = np.linalg.norm(c_vec)
+
+        # Expected angles from cell geometry
+        expected_alpha = np.arctan2(np.linalg.norm(np.cross(b_vec, c_vec)), np.dot(b_vec, c_vec))
+        expected_beta = np.arctan2(np.linalg.norm(np.cross(c_vec, a_vec)), np.dot(c_vec, a_vec))
+        expected_gamma = np.arctan2(np.linalg.norm(np.cross(a_vec, b_vec)), np.dot(a_vec, b_vec))
+
+        # Convert to pysktb Structure
+        structure = ase_atoms_to_pysktb_structure(atoms)
+
+        # Test 1: Verify all lattice constants are positive and reasonable
+        assert structure.lattice.a > 0, "Lattice constant a must be positive"
+        assert structure.lattice.b > 0, "Lattice constant b must be positive"
+        assert structure.lattice.c > 0, "Lattice constant c must be positive"
+
+        # Verify magnitudes are reasonable (in typical range for atomic structures, 1-20 Å)
+        assert 0.5 < structure.lattice.a < 20.0, \
+            f"Lattice a={structure.lattice.a} outside reasonable range (0.5-20 Å)"
+        assert 0.5 < structure.lattice.b < 20.0, \
+            f"Lattice b={structure.lattice.b} outside reasonable range (0.5-20 Å)"
+        assert 0.5 < structure.lattice.c < 20.0, \
+            f"Lattice c={structure.lattice.c} outside reasonable range (0.5-20 Å)"
+
+        # Test 2: Verify angles are preserved within 1e-6 radian tolerance
+        # Note: The conversion process normalizes by the first vector, so angles should be preserved exactly
+        tolerance = 1e-6  # radians
+
+        np.testing.assert_allclose(
+            structure.lattice.alpha,
+            expected_alpha,
+            rtol=0,
+            atol=tolerance,
+            err_msg=f"Alpha angle not preserved: expected {expected_alpha}, got {structure.lattice.alpha}"
+        )
+
+        np.testing.assert_allclose(
+            structure.lattice.beta,
+            expected_beta,
+            rtol=0,
+            atol=tolerance,
+            err_msg=f"Beta angle not preserved: expected {expected_beta}, got {structure.lattice.beta}"
+        )
+
+        np.testing.assert_allclose(
+            structure.lattice.gamma,
+            expected_gamma,
+            rtol=0,
+            atol=tolerance,
+            err_msg=f"Gamma angle not preserved: expected {expected_gamma}, got {structure.lattice.gamma}"
+        )
+
+
+# Periodicity and PBC Tests
+# ============================================================================
+
+@pytest.mark.skipif(not HAS_ASE, reason="ASE not installed")
+def test_periodicity_conversion():
+    """
+    Test periodicity conversion from ASE pbc to pysktb Structure.
+
+    This test verifies that ASE's periodic boundary conditions (pbc) are
+    correctly mapped to pysktb's periodicity attribute, and that max_image
+    is correctly computed based on the periodicity pattern.
+
+    The formula for max_image is: max_image = 3^sum(periodicity)
+    - For quasi-2D [T,T,F]: sum=2, max_image = 3^2 = 9
+    - For cluster [F,F,F]: sum=0, max_image = 3^0 = 1
+    - For 3D [T,T,T]: sum=3, max_image = 3^3 = 27
+
+    Verifies acceptance criteria:
+    - AC #4: Periodicity is correctly mapped from ASE pbc to pysktb
+    - AC #5: max_image is correctly computed for different periodicity patterns
+    """
+    # ========== Test 1: Quasi-2D structure (quasi-2D pbc=[T,T,F]) ==========
+    # Create a simple cubic structure
+    atoms_2d = Atoms('Si', positions=[[0, 0, 0]],
+                     cell=[[3.0, 0, 0], [0, 3.0, 0], [0, 0, 3.0]],
+                     pbc=[True, True, False])
+
+    # Convert to pysktb Structure with orbital and bond information
+    orbital_dict = {'Si': ['s', 'px', 'py', 'pz']}
+    bond_dict = {'SiSi': {'NN': 2.5}}
+    structure_2d = ase_atoms_to_pysktb_structure(
+        atoms_2d,
+        orbital_dict=orbital_dict,
+        bond_cutoff_dict=bond_dict
+    )
+
+    # Verify periodicity is correctly mapped
+    assert structure_2d.periodicity == [True, True, False], \
+        f"Expected periodicity [True, True, False], got {structure_2d.periodicity}"
+
+    # Verify max_image is correctly computed (3^2 = 9 for quasi-2D)
+    assert structure_2d.max_image == 9, \
+        f"Expected max_image=9 for quasi-2D, got {structure_2d.max_image}"
+
+    # ========== Test 2: Cluster structure (non-periodic pbc=[F,F,F]) ==========
+    # Create a cluster with no periodicity
+    atoms_cluster = Atoms('Si', positions=[[0, 0, 0]],
+                          cell=[[3.0, 0, 0], [0, 3.0, 0], [0, 0, 3.0]],
+                          pbc=[False, False, False])
+
+    # Convert to pysktb Structure with orbital and bond information
+    structure_cluster = ase_atoms_to_pysktb_structure(
+        atoms_cluster,
+        orbital_dict=orbital_dict,
+        bond_cutoff_dict=bond_dict
+    )
+
+    # Verify periodicity is correctly mapped
+    assert structure_cluster.periodicity == [False, False, False], \
+        f"Expected periodicity [False, False, False], got {structure_cluster.periodicity}"
+
+    # Verify max_image is correctly computed (3^0 = 1 for non-periodic)
+    assert structure_cluster.max_image == 1, \
+        f"Expected max_image=1 for cluster, got {structure_cluster.max_image}"
+
+    # ========== Test 3: Explicit periodicity override ==========
+    # Create an ASE structure with pbc=[T,T,T]
+    atoms_3d = Atoms('Si', positions=[[0, 0, 0]],
+                     cell=[[3.0, 0, 0], [0, 3.0, 0], [0, 0, 3.0]],
+                     pbc=[True, True, True])
+
+    # Convert with explicit periodicity override to quasi-2D
+    structure_override = ase_atoms_to_pysktb_structure(
+        atoms_3d,
+        orbital_dict=orbital_dict,
+        bond_cutoff_dict=bond_dict,
+        periodicity=[True, True, False]  # Override default pbc=[T,T,T]
+    )
+
+    # Verify the explicit periodicity override was applied
+    assert structure_override.periodicity == [True, True, False], \
+        f"Expected periodicity [True, True, False] from override, got {structure_override.periodicity}"
+
+    # Verify max_image reflects the overridden periodicity
+    assert structure_override.max_image == 9, \
+        f"Expected max_image=9 with overridden periodicity, got {structure_override.max_image}"
+
+
+def test_multi_element_structure():
+    """
+    Test conversion of multi-element structures (GaAs example).
+
+    This test verifies that the ASE-to-pysktb conversion correctly handles
+    structures with multiple different elements, where each element can have
+    its own orbital definition in the orbital_dict.
+
+    Verifies acceptance criteria AC #5:
+    - Creates GaAs ASE Atoms (2 atoms, zinc-blende)
+    - Converts with orbital_dict={'Ga': ['s', 'p'], 'As': ['s', 'p']}
+    - Verifies structure.atoms[0].element in ['Ga', 'As']
+    - Verifies structure.atoms[1].element in ['Ga', 'As']
+    - Verifies len(structure.get_elements()) == 2
+    - Verifies both 'Ga' and 'As' are in structure.get_elements()
+    """
+    # Create GaAs structure using fixture helper
+    atoms = create_gaas_fixture()
+
+    # Define orbital dictionary with per-element assignments
+    # Note: p orbital should be broken into px, py, pz
+    orbital_dict = {
+        'Ga': ['s', 'px', 'py', 'pz'],  # Ga gets s and p orbitals
+        'As': ['s', 'px', 'py', 'pz']   # As gets s and p orbitals
+    }
+
+    # Define bond cutoff distances for GaAs
+    # GaAs nearest-neighbor distance is ~2.45 Å for zinc-blende structure
+    bond_cutoff_dict = {
+        'GaAs': {'NN': 3.0},  # Cutoff for Ga-As bonds
+        'GaGa': {'NN': 4.0},  # Cutoff for Ga-Ga bonds
+        'AsAs': {'NN': 4.0}   # Cutoff for As-As bonds
+    }
+
+    # Convert to pysktb Structure
+    structure = ase_atoms_to_pysktb_structure(
+        atoms,
+        orbital_dict=orbital_dict,
+        bond_cutoff_dict=bond_cutoff_dict
+    )
+
+    # Verify structure has 2 atoms
+    assert len(structure.atoms) == 2, "Structure should have 2 atoms"
+
+    # Verify both atoms have valid elements
+    assert structure.atoms[0].element in ['Ga', 'As'], \
+        f"First atom element {structure.atoms[0].element} must be Ga or As"
+    assert structure.atoms[1].element in ['Ga', 'As'], \
+        f"Second atom element {structure.atoms[1].element} must be Ga or As"
+
+    # Verify get_elements() returns exactly 2 unique elements
+    elements = structure.get_elements()
+    assert len(elements) == 2, \
+        f"get_elements() should return 2 elements, got {len(elements)}: {elements}"
+
+    # Verify both Ga and As are in the elements list
+    assert 'Ga' in elements, "Gallium (Ga) must be in elements list"
+    assert 'As' in elements, "Arsenic (As) must be in elements list"
+
+    # Verify orbital assignments are correct for each atom
+    for i, atom in enumerate(structure.atoms):
+        if atom.element == 'Ga':
+            assert atom.orbitals is not None, f"Atom {i} (Ga) should have orbitals assigned"
+            assert set(atom.orbitals) == {'s', 'px', 'py', 'pz'}, \
+                f"Atom {i} (Ga) should have s, px, py, pz orbitals, got {atom.orbitals}"
+        elif atom.element == 'As':
+            assert atom.orbitals is not None, f"Atom {i} (As) should have orbitals assigned"
+            assert set(atom.orbitals) == {'s', 'px', 'py', 'pz'}, \
+                f"Atom {i} (As) should have s, px, py, pz orbitals, got {atom.orbitals}"
+
+
 
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])
