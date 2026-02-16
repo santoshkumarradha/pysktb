@@ -58,6 +58,10 @@ class Structure(object):
     def get_bond_mat(self):
         """return bond matrix"""
 
+        # Return None if no bond information is provided
+        if self.bond_cut is None:
+            return None
+
         def get_cutoff(atom_1, atom_2):
             ele_1 = atom_1.element
             ele_2 = atom_2.element
