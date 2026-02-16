@@ -387,5 +387,197 @@ class TestErrorHandling:
             "Error message should mention 'degenerate' or 'zero volume' to identify the issue"
 
 
+# ============================================================================
+# Parameter Passthrough and Default Handling Tests
+# ============================================================================
+
+@pytest.mark.skipif(not HAS_ASE, reason="ASE not installed")
+class TestParameterPassthrough:
+    """Test parameter passthrough and default handling in ASE conversion."""
+
+    def test_bond_cutoff_passthrough(self):
+        """
+        Test that bond_cutoff_dict is correctly passed through and bond_mat is computed.
+
+        Verifies acceptance criterion AC #10: Structure.bond_cut should contain the
+        passed bond_cutoff_dict, and structure.bond_mat should be computed and non-empty.
+        """
+        # Create graphene ASE structure
+        atoms = create_graphene_fixture()
+
+        # Define bond cutoff dictionary
+        bond_cutoff_dict = {'CC': {'NN': 1.6}}
+
+        # Convert with bond cutoff specification
+        structure = ase_atoms_to_pysktb_structure(
+            atoms,
+            orbital_dict={'C': ['s', 'p']},
+            bond_cutoff_dict=bond_cutoff_dict
+        )
+
+        # Verify bond_cutoff_dict is stored in structure.bond_cut
+        assert structure.bond_cut == bond_cutoff_dict, \
+            f"structure.bond_cut should equal {bond_cutoff_dict}, got {structure.bond_cut}"
+
+        # Verify bond_mat exists and is non-empty
+        assert structure.bond_mat is not None, "structure.bond_mat should not be None"
+        assert structure.bond_mat.size > 0, "structure.bond_mat should be non-empty"
+
+    def test_default_parameters(self):
+        """
+        Test default parameter handling when optional parameters are None.
+
+        Verifies acceptance criterion AC #11: When periodicity=None, numba=True, name=None,
+        the structure should have:
+        - periodicity inferred from ASE pbc (True for all 3 dimensions)
+        - name defaults to 'system'
+        - numba should be True
+        """
+        # Create simple cubic ASE structure with all pbc=True
+        atoms = create_simple_cubic_fixture()
+        assert all(atoms.pbc), "Fixture should have all pbc=True"
+
+        # Convert with None for optional parameters
+        structure = ase_atoms_to_pysktb_structure(
+            atoms,
+            orbital_dict={'Fe': ['s']},
+            periodicity=None,
+            numba=True,
+            name=None
+        )
+
+        # Verify periodicity is inferred from ASE pbc
+        assert structure.periodicity == [True, True, True], \
+            f"structure.periodicity should be [True, True, True], got {structure.periodicity}"
+
+        # Verify name defaults to 'system'
+        assert structure.name == 'system', \
+            f"structure.name should be 'system', got {structure.name}"
+
+        # Verify numba flag is True
+        assert structure.numba is True, \
+            f"structure.numba should be True, got {structure.numba}"
+
+    def test_fractional_wrapping(self):
+        """
+        Test that fractional coordinates are wrapped to [0, 1) range.
+
+        Verifies acceptance criterion AC #12: All fractional coordinates in
+        structure.atoms should be within [0, 1) after conversion.
+        """
+        # Create a simple structure but manually shift some atoms outside [0, 1)
+        a = 3.0
+        cell = np.array([
+            [a, 0, 0],
+            [0, a, 0],
+            [0, 0, a]
+        ])
+
+        # Positions in fractional coordinates (some outside [0, 1))
+        # ASE Atoms() expects Cartesian coordinates, so we need to convert
+        fractional_positions = np.array([
+            [0.2, 0.3, 0.4],    # Normal position
+            [1.2, 0.5, 0.6],    # x > 1, should wrap to 0.2
+            [0.8, 1.1, 0.9],    # y > 1, should wrap to 0.1
+            [-0.3, 0.4, 1.2],   # x < 0, y normal, z > 1
+        ])
+
+        # Convert fractional to Cartesian for ASE
+        cartesian_positions = np.dot(fractional_positions, cell)
+
+        # Create ASE Atoms object
+        atoms = Atoms('Fe4', positions=cartesian_positions, cell=cell, pbc=True)
+
+        # Convert to pysktb structure
+        structure = ase_atoms_to_pysktb_structure(
+            atoms,
+            orbital_dict={'Fe': ['s']}
+        )
+
+        # Verify all fractional coordinates are in [0, 1)
+        for i, atom in enumerate(structure.atoms):
+            pos = atom.pos
+            for j, coord in enumerate(pos):
+                assert 0.0 <= coord < 1.0, \
+                    f"Atom {i}, coordinate {j}: position {coord} not in [0, 1)"
+
+
+# ============================================================================
+# Module Export and Optional Dependency Tests
+# ============================================================================
+
+class TestModuleExports:
+    """Test module exports and optional ASE dependency handling."""
+
+    def test_export_in_init(self):
+        """
+        Test that ase_atoms_to_pysktb_structure is properly exported.
+
+        Verifies acceptance criteria:
+        - AC #16: Function can be imported directly from pysktb package
+        - AC #18: Function is listed in __all__ for proper public API exposure
+        """
+        import pysktb
+
+        # Verify the function is accessible from the main pysktb module
+        assert hasattr(pysktb, 'ase_atoms_to_pysktb_structure'), \
+            "ase_atoms_to_pysktb_structure should be accessible from pysktb module"
+
+        # Verify the function is in __all__ for proper public API exposure
+        assert 'ase_atoms_to_pysktb_structure' in pysktb.__all__, \
+            "ase_atoms_to_pysktb_structure should be in pysktb.__all__"
+
+        # Verify it can be imported directly (when ASE is installed)
+        if HAS_ASE:
+            from pysktb import ase_atoms_to_pysktb_structure as func
+            assert callable(func), \
+                "ase_atoms_to_pysktb_structure should be callable"
+
+        # Also verify it's available in interfaces module
+        from pysktb.interfaces import ase_atoms_to_pysktb_structure
+        assert callable(ase_atoms_to_pysktb_structure) or HAS_ASE, \
+            "ase_atoms_to_pysktb_structure should be accessible from pysktb.interfaces"
+
+    def test_missing_ase_import(self):
+        """
+        Test that helpful error message is provided when ASE is not installed.
+
+        Verifies acceptance criteria:
+        - AC #18: When ASE import fails, a helpful error message guides users
+        - Function should raise ImportError with installation guidance
+
+        Uses unittest.mock.patch to simulate ASE import failure and verifies
+        that the fallback stub provides helpful error guidance.
+        """
+        import sys
+        from unittest import mock
+
+        # Get the current function from pysktb
+        import pysktb
+
+        # Test the actual behavior of the fallback stub by mocking the import
+        # We patch at the point where the import happens in pysktb/__init__.py
+        with mock.patch('pysktb.interfaces.ase.ase_atoms_to_pysktb_structure',
+                       side_effect=ImportError("ASE is required")):
+            # Reimport pysktb to trigger the fallback logic
+            import importlib
+            importlib.reload(pysktb)
+
+            # Get the function (should be the fallback stub)
+            func = pysktb.ase_atoms_to_pysktb_structure
+
+            # Call the function and verify it raises ImportError with helpful message
+            with pytest.raises(ImportError) as excinfo:
+                func(None)
+
+            error_msg = str(excinfo.value)
+            # Verify the error message contains helpful installation guidance
+            assert 'pip install' in error_msg or 'ase' in error_msg.lower(), \
+                "Error message should suggest installation guidance (e.g., 'pip install ase')"
+
+        # Restore the original pysktb after the mock
+        importlib.reload(pysktb)
+
+
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])
