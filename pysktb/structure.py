@@ -58,9 +58,16 @@ class Structure(object):
     def get_bond_mat(self):
         """return bond matrix"""
 
+        # Return None if no bond information is provided
+        if self.bond_cut is None:
+            return None
+
         def get_cutoff(atom_1, atom_2):
             ele_1 = atom_1.element
             ele_2 = atom_2.element
+            # If bond_cut is None, return None (no bonding information)
+            if self.bond_cut is None:
+                return None
             key_list = list(self.bond_cut.keys())
             if "{}{}".format(ele_1, ele_2) in key_list:
                 pair = "{}{}".format(ele_1, ele_2)
@@ -85,10 +92,12 @@ class Structure(object):
         for image_i, image in enumerate(itertools.product(*periodic_image)):
             for i, atom1 in enumerate(atoms):
                 for j, atom2 in enumerate(atoms):
-                    cutoff = get_cutoff(atom1, atom2)["NN"]
+                    cutoff = get_cutoff(atom1, atom2)
                     if cutoff is None:
                         continue
-                    bond_mat[image_i, i, j] = dist_mat[image_i, i, j] < cutoff
+                    if cutoff["NN"] is None:
+                        continue
+                    bond_mat[image_i, i, j] = dist_mat[image_i, i, j] < cutoff["NN"]
         bond_mat_2 = dist_mat > 0
 
         return bond_mat * bond_mat_2

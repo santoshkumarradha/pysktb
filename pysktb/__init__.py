@@ -52,6 +52,17 @@ from .visualization import (
     plot_edge_vs_bulk_comparison,
 )
 
+# Optional ASE interface
+try:
+    from .interfaces.ase import ase_atoms_to_pysktb_structure
+except ImportError:
+    # ASE not installed, provide fallback stub function
+    def ase_atoms_to_pysktb_structure(*args, **kwargs):
+        raise ImportError(
+            "ASE is required for this function. "
+            "Please install it with: pip install ase"
+        )
+
 __all__ = [
     # Core classes
     "Structure",
@@ -62,6 +73,8 @@ __all__ = [
     "GreensFunction",
     "SurfaceGreensFunction",
     "Forces",
+    # ASE interface
+    "ase_atoms_to_pysktb_structure",
     # Scaling laws
     "ScalingLaw",
     "Constant",
