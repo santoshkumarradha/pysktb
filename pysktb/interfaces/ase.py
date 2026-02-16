@@ -121,12 +121,30 @@ def ase_atoms_to_pysktb_structure(
     if len(ase_atoms) < 1:
         raise ValueError("Cannot convert empty structure (len < 1)")
 
-    # Validate that cell is defined
-    if ase_atoms.cell is None:
+    # Validate that cell is defined and has proper rank
+    cell = ase_atoms.get_cell()
+
+    # Check if cell has all three lattice vectors (rank 3)
+    try:
+        rank = np.linalg.matrix_rank(cell)
+        if rank < 3:
+            # Less than 3 linearly independent vectors = degenerate cell
+            raise ValueError("Structure has degenerate or zero volume cell")
+    except (np.linalg.LinAlgError, ValueError):
+        # If matrix_rank fails or we already raised, check what happened
+        pass
+
+    # Additional check: cell should not be all zeros
+    if np.allclose(cell, 0.0):
         raise ValueError("Structure has missing cell information")
 
     # Validate non-zero volume
-    cell_volume = ase_atoms.get_volume()
+    try:
+        cell_volume = ase_atoms.get_volume()
+    except ValueError:
+        # ASE raises ValueError if cell is degenerate or undefined
+        raise ValueError("Structure has degenerate or zero volume cell")
+
     if np.isclose(cell_volume, 0.0):
         raise ValueError("Structure has degenerate or zero volume cell")
 
