@@ -5,9 +5,23 @@ from .atom import Atom
 
 
 class Structure(object):
-    """Object to represent structure of system"""
+    """Object to represent structure of system
 
-    def __init__(self, lattice, atoms, periodicity=None, name=None, bond_cut=None, numba=True):
+    Args:
+        lattice: Lattice object defining the crystal structure
+        atoms: List of Atom objects
+        periodicity: List of 3 booleans for periodic boundary conditions (default: [True, True, True])
+        name: Name of the structure (default: "system")
+        bond_cut: Dictionary defining bond cutoffs. Two formats supported:
+            - Legacy format: {'XX': {'NN': value}} where XX is element pair and value is max cutoff
+            - New format: {'XX': {'min': lower, 'max': upper}} for min/max distance cutoffs
+            Bonds are included when min <= distance < max (or distance < NN for legacy format)
+        numba: Whether to use numba acceleration (default: True)
+    """
+
+    def __init__(
+        self, lattice, atoms, periodicity=None, name=None, bond_cut=None, numba=True
+    ):
         assert isinstance(lattice, Lattice), "not Lattice object"
         assert isinstance(atoms, list), "atoms is not list"
         assert isinstance(atoms[0], Atom), "atom is not Atom object"
@@ -26,13 +40,13 @@ class Structure(object):
 
     def get_supercell(self, sc, vac=[0, 0, 0]):
         """
-		 Input-
-		 sc:super cell lattice 3x3 
-		 vaccume: 1x3
-		 returns: pymatgen structure
-		 
-		 usefull for making use of pymatgen's codes for making finite complex slabs and defects
-		"""
+        Input-
+        sc:super cell lattice 3x3
+        vaccume: 1x3
+        returns: pymatgen structure
+
+        usefull for making use of pymatgen's codes for making finite complex slabs and defects
+        """
         try:
             import pymatgen as p
         except:
@@ -50,13 +64,25 @@ class Structure(object):
             l = p.core.lattice.Lattice.from_parameters(
                 a=abc[0], b=abc[1], c=abc[2], alpha=ang[0], beta=ang[1], gamma=ang[2]
             )
-            return p.Structure(lattice=l, species=new_s.species, coords=new_s.frac_coords)
+            return p.Structure(
+                lattice=l, species=new_s.species, coords=new_s.frac_coords
+            )
 
         final = get_vaccume(new_s, vac)
         return final
 
     def get_bond_mat(self):
-        """return bond matrix"""
+        """Return bond matrix.
+
+        Determines bonds based on distance cutoffs. Supports two bond_cut formats:
+        - Legacy: {'XX': {'NN': max_value}} - bonds included when distance < max_value
+        - Min/Max: {'XX': {'min': lower, 'max': upper}} - bonds included when min <= distance < max
+
+        Atoms always exclude themselves (distance = 0) regardless of min value.
+
+        Returns:
+            numpy.ndarray: Boolean array of shape (max_image, n_atom, n_atom) indicating bonds
+        """
 
         def get_cutoff(atom_1, atom_2):
             ele_1 = atom_1.element
@@ -69,6 +95,27 @@ class Structure(object):
             else:
                 return None
             return self.bond_cut[pair]
+
+        def get_min_max(cutoff_dict):
+            """Extract min and max cutoffs from cutoff dictionary.
+
+            Supports both legacy {'NN': value} and new {'min': x, 'max': y} formats.
+            Returns (min_cutoff, max_cutoff) tuple.
+            """
+            if cutoff_dict is None:
+                return (None, None)
+
+            # Check for new min/max format
+            if "min" in cutoff_dict or "max" in cutoff_dict:
+                min_cutoff = cutoff_dict.get("min", 0.0)
+                max_cutoff = cutoff_dict.get("max", float("inf"))
+                return (min_cutoff, max_cutoff)
+
+            # Legacy format: {'NN': value}
+            if "NN" in cutoff_dict:
+                return (0.0, cutoff_dict["NN"])
+
+            return (None, None)
 
         max_image = self.max_image
         n_atom = len(self.atoms)
@@ -85,10 +132,15 @@ class Structure(object):
         for image_i, image in enumerate(itertools.product(*periodic_image)):
             for i, atom1 in enumerate(atoms):
                 for j, atom2 in enumerate(atoms):
-                    cutoff = get_cutoff(atom1, atom2)["NN"]
-                    if cutoff is None:
+                    cutoff_dict = get_cutoff(atom1, atom2)
+                    min_cutoff, max_cutoff = get_min_max(cutoff_dict)
+                    if min_cutoff is None or max_cutoff is None:
                         continue
-                    bond_mat[image_i, i, j] = dist_mat[image_i, i, j] < cutoff
+                    distance = dist_mat[image_i, i, j]
+                    # Bond exists when min <= distance < max
+                    bond_mat[image_i, i, j] = (distance >= min_cutoff) and (
+                        distance < max_cutoff
+                    )
         bond_mat_2 = dist_mat > 0
 
         return bond_mat * bond_mat_2
@@ -110,10 +162,10 @@ class Structure(object):
         """return distance matrix vector"""
 
         def get_dist_vec(pos1, pos2, lat_vecs, l_min=False):
-            """ # p1, p2 direct 
-				# return angstrom
-				# latConst is included in lat_vecs
-			"""
+            """# p1, p2 direct
+            # return angstrom
+            # latConst is included in lat_vecs
+            """
             diff = np.array(pos1) - np.array(pos2)
             if np.linalg.norm(diff) == 0:
                 return 0
@@ -153,7 +205,9 @@ class Structure(object):
         """read POSCAR file and return Structure object (NOT SUPPORTED YET)"""
         # TODO: add support for POSCAR Files
         raise NotImplementedError
-        lat_const, lattice_mat, atom_set_direct, dynamics = readPOSCAR(fileName=file_name)
+        lat_const, lattice_mat, atom_set_direct, dynamics = readPOSCAR(
+            fileName=file_name
+        )
 
         atoms = []
         for a in atom_set_direct:
@@ -166,7 +220,7 @@ class Structure(object):
         return structure
 
     def get_dir_cos(self, image_i, atoms_i, atom_j):
-        """ return directional cos of distance vector """
+        """return directional cos of distance vector"""
         dist_vec = self.dist_mat_vec[image_i, atoms_i, atom_j, :]
         if np.linalg.norm(dist_vec) == 0:
             return 0, 0, 0
@@ -180,4 +234,3 @@ class Structure(object):
         indx_zero = np.where(dist_norm == 0)
         dist_norm[indx_zero] = 1e-10
         return dist_vec / dist_norm[:, :, :, np.newaxis]
-
