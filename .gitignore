@@ -108,3 +108,5 @@ GitHub.sublime-settings
 .history
 .DS_Store
 send.sh
+.worktrees/
+.artifacts/
